@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-21
+
+### Added
+
+- Environment-backed `Settings` model in `transit_pipeline.config` covering
+  pipeline paths, live API credentials, and API server options.
+- Automatic mock mode while `PYTEST_CURRENT_TEST` is set, plus an explicit
+  `PIPELINE_MOCK_MODE` switch for normal execution.
+- Blank `TRANSIT_API_KEY` values are treated as missing, and API keys are
+  masked in logs and representations.
+- Tests for mock-mode switching, project defaults, environment overrides, and
+  secret handling.
+
 ## [0.1.0] - 2026-11-21
 
 ### Added
