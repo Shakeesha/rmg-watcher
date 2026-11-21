@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-21
+
+### Added
+
+- Svelte 5 kiosk UI with Live, Delays, and Transfers views.
+- Typed API client and shared TypeScript interfaces matching the FastAPI
+  response schemas.
+- Unified touch, keyboard, and hardware-button navigation controller with
+  focus management and view cycling.
+- Persisted stop selection, 15-second polling, online/offline handling, and
+  automatic retry after failures.
+- Status banner covering connection state, stale data, database and pipeline
+  health, and mock mode.
+- High-contrast responsive styling for 800x480 and 1024x600 displays.
+- Transfer-risk list with at-risk connection highlighting.
+- Hardware UI layout and navigation documentation.
+
 ## [0.8.0] - 2026-11-21
 
 ### Added
