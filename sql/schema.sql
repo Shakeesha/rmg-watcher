@@ -1,0 +1,2 @@
+-- Star schema DDL: dim_stops, dim_routes, fact_stop_events, quarantine, and indexes.
+-- TODO: implement in the storage phase.
