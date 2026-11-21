@@ -52,3 +52,21 @@ The root component refreshes health, stops, metrics, and the selected stop's
 departures every 15 seconds. The browser's online/offline events trigger an
 immediate refresh when connectivity returns. Failed requests leave the last
 known data visible and switch the status banner to an error state.
+
+## GPIO bridge (optional)
+
+`deploy/scripts/gpio_to_keys.py` creates a virtual keyboard with `evdev` and
+uses `gpiozero` to watch five buttons. Wire each button between its BCM pin and
+ground:
+
+| BCM pin | Key | UI action |
+| --- | --- | --- |
+| 17 | Right | Focus the next control |
+| 27 | Left | Focus the previous control |
+| 22 | Enter | Activate the focused control |
+| 23 | PageDown | Next view |
+| 24 | PageUp | Previous view |
+
+Install `python3-gpiozero` and `python3-evdev`, load the `uinput` module, and
+grant the `input` group access to `/dev/uinput`. Then enable
+`transit-gpio-nav.service`. See README.md for the exact commands.

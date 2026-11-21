@@ -1,2 +1,72 @@
-# Optional containerized deployment with strict 4 GB RAM limits.
-# TODO: define services, memory limits, and volumes.
+name: transit-kiosk
+
+x-app: &app
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile
+  image: transit-kiosk:0.10.0
+  env_file:
+    - ../.env
+  environment:
+    HOME: /tmp
+    API_HOST: 0.0.0.0
+    API_PORT: "8000"
+    DATABASE_PATH: /app/data/transit.db
+    RAW_STORE_PATH: /app/data/raw
+    QUARANTINE_PATH: /app/data/quarantine
+    FRONTEND_DIST_PATH: /app/frontend/dist
+  volumes:
+    - transit-data:/app/data
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  api:
+    <<: *app
+    command: ["python", "-m", "transit_pipeline", "serve"]
+    ports:
+      - "8000:8000"
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 128
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  pipeline:
+    <<: *app
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          python -m transit_pipeline run || true
+          sleep 60
+        done
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 512m
+    cpus: 0.5
+    pids_limit: 64
+
+volumes:
+  transit-data:

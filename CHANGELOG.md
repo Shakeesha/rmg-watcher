@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-21
+
+### Added
+
+- Systemd units for the API, one-shot pipeline, pipeline timer, fullscreen
+  kiosk browser, and optional GPIO navigation bridge.
+- Kiosk launcher with API/display readiness checks and automatic crash
+  recovery.
+- gpiozero-to-evdev bridge for five physical navigation buttons.
+- Dockerfile and Compose stack for the API and periodic pipeline worker with
+  strict 4 GB RAM limits.
+- GitHub Actions CI running pytest, ruff, mypy, svelte-check, and the Vite build.
+- Architecture, hardware UI, and deployment documentation.
+
 ## [0.9.0] - 2026-11-21
 
 ### Added

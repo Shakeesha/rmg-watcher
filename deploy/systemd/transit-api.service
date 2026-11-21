@@ -1,2 +1,32 @@
-# transit-api.service — FastAPI backend and static frontend server.
-# TODO: define [Unit], [Service], and [Install] sections during Pi integration.
+[Unit]
+Description=Transit telemetry API and kiosk frontend
+Documentation=file:///opt/transit-kiosk/README.md
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=transit
+Group=transit
+WorkingDirectory=/opt/transit-kiosk
+EnvironmentFile=-/opt/transit-kiosk/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/transit-kiosk/.venv/bin/python -m transit_pipeline serve
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/transit-kiosk/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+MemoryMax=768M
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

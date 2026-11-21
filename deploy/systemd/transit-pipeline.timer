@@ -1,2 +1,12 @@
-# transit-pipeline.timer — periodic pipeline trigger (e.g. every 60 seconds).
-# TODO: define [Unit], [Timer], and [Install] sections during Pi integration.
+[Unit]
+Description=Run the transit telemetry pipeline every minute
+Documentation=file:///opt/transit-kiosk/README.md
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=transit-pipeline.service
+
+[Install]
+WantedBy=timers.target

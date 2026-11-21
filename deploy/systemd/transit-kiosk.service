@@ -1,2 +1,24 @@
-# transit-kiosk.service — fullscreen kiosk browser launched on boot.
-# TODO: define [Unit], [Service], and [Install] sections during Pi integration.
+[Unit]
+Description=Transit kiosk browser
+Documentation=file:///opt/transit-kiosk/README.md
+Wants=transit-api.service
+After=network-online.target display-manager.service transit-api.service
+ConditionPathExists=/opt/transit-kiosk/frontend/dist/index.html
+
+[Service]
+Type=simple
+User=transit
+Group=transit
+WorkingDirectory=/opt/transit-kiosk
+EnvironmentFile=-/opt/transit-kiosk/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/transit-kiosk/deploy/scripts/start-kiosk.sh
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+KillMode=mixed
+MemoryMax=1536M
+TasksMax=256
+
+[Install]
+WantedBy=graphical.target

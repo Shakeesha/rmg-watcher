@@ -1,2 +1,30 @@
-# transit-pipeline.service — single ingest -> transform -> load -> quality run.
-# TODO: define [Unit] and [Service] sections during Pi integration.
+[Unit]
+Description=Transit telemetry pipeline run
+Documentation=file:///opt/transit-kiosk/README.md
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=transit
+Group=transit
+WorkingDirectory=/opt/transit-kiosk
+EnvironmentFile=-/opt/transit-kiosk/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/transit-kiosk/.venv/bin/python -m transit_pipeline run
+TimeoutStartSec=180
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/transit-kiosk/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+MemoryMax=512M
+TasksMax=64
