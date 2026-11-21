@@ -15,6 +15,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY sql ./sql
+COPY tests/fixtures ./tests/fixtures
 RUN pip install --no-cache-dir -e .
 COPY --from=frontend /frontend/dist ./frontend/dist
 RUN useradd --create-home --uid 10001 transit \

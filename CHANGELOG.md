@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-11-22
+
+### Fixed
+
+- Docker image now includes `tests/fixtures`, so `PIPELINE_MOCK_MODE=true`
+  works inside the Compose containers instead of failing to read `stops.json`.
+
 ## [0.10.1] - 2026-11-21
 
 ### Removed
