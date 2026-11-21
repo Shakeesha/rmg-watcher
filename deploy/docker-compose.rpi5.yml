@@ -1,0 +1,2 @@
+# Optional containerized deployment with strict 4 GB RAM limits.
+# TODO: define services, memory limits, and volumes.

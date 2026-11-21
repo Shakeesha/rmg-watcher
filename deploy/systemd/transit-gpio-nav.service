@@ -1,0 +1,2 @@
+# transit-gpio-nav.service — optional GPIO button to UI key event bridge.
+# TODO: define [Unit], [Service], and [Install] sections during Pi integration.

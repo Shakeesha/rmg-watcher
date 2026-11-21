@@ -1,0 +1,2 @@
+# transit-pipeline.service — single ingest -> transform -> load -> quality run.
+# TODO: define [Unit] and [Service] sections during Pi integration.

@@ -1,0 +1,2 @@
+# transit-pipeline.timer — periodic pipeline trigger (e.g. every 60 seconds).
+# TODO: define [Unit], [Timer], and [Install] sections during Pi integration.

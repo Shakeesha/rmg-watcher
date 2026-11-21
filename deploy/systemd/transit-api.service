@@ -1,0 +1,2 @@
+# transit-api.service — FastAPI backend and static frontend server.
+# TODO: define [Unit], [Service], and [Install] sections during Pi integration.

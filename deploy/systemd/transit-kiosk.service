@@ -1,0 +1,2 @@
+# transit-kiosk.service — fullscreen kiosk browser launched on boot.
+# TODO: define [Unit], [Service], and [Install] sections during Pi integration.
