@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-21
+
+### Added
+
+- Domain models and enums: `Stop`, `Route`, `TripUpdate`, `DelayEvent`,
+  `TripStatus`, and `DelayCategory`.
+- SQLite star schema with `dim_stops`, `dim_routes`, `fact_stop_events`,
+  `quarantine`, and `pipeline_runs`.
+- `Database` connection manager with WAL mode, foreign keys, busy timeout, and
+  idempotent schema initialization.
+- Schema and WAL-mode tests.
+
 ## [0.2.0] - 2026-11-21
 
 ### Added
