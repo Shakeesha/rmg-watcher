@@ -1,1 +1,101 @@
-[]
+[
+  {
+    "tripId": "trip-1001",
+    "routeId": "route-4",
+    "routeShortName": "4",
+    "routeMode": "tram",
+    "stopId": "luisenplatz",
+    "scheduledTime": "2026-11-21T08:00:00+01:00",
+    "expectedTime": "2026-11-21T08:03:00+01:00",
+    "status": "delayed"
+  },
+  {
+    "tripId": "trip-1002",
+    "routeId": "route-H",
+    "routeShortName": "H",
+    "routeMode": "bus",
+    "stopId": "luisenplatz",
+    "scheduledTime": "2026-11-21T08:05:00+01:00",
+    "expectedTime": "2026-11-21T08:05:00+01:00",
+    "status": "on_time"
+  },
+  {
+    "tripId": "trip-1003",
+    "routeId": "route-9",
+    "routeShortName": "9",
+    "routeMode": "tram",
+    "stopId": "luisenplatz",
+    "scheduledTime": "2026-11-21T08:10:00+01:00",
+    "expectedTime": null,
+    "status": "cancelled"
+  },
+  {
+    "tripId": "trip-1004",
+    "routeId": "route-4",
+    "routeShortName": "4",
+    "routeMode": "tram",
+    "stopId": "luisenplatz",
+    "scheduledTime": "2026-11-21T08:15:00+01:00",
+    "expectedTime": "2026-11-21T08:27:00+01:00",
+    "status": "delayed"
+  },
+  {
+    "tripId": "trip-1001",
+    "routeId": "route-4",
+    "routeShortName": "4",
+    "routeMode": "tram",
+    "stopId": "luisenplatz",
+    "scheduledTime": "2026-11-21T08:00:00+01:00",
+    "expectedTime": "2026-11-21T08:04:00+01:00",
+    "status": "delayed"
+  },
+  {
+    "routeId": "route-9",
+    "routeShortName": "9",
+    "routeMode": "tram",
+    "stopId": "luisenplatz",
+    "scheduledTime": "2026-11-21T08:20:00+01:00",
+    "expectedTime": "2026-11-21T08:21:00+01:00",
+    "status": "delayed"
+  },
+  {
+    "tripId": "trip-1007",
+    "routeId": "route-H",
+    "routeShortName": "H",
+    "routeMode": "bus",
+    "stopId": "luisenplatz",
+    "scheduledTime": "not-a-timestamp",
+    "expectedTime": "2026-11-21T08:25:00+01:00",
+    "status": "delayed"
+  },
+  {
+    "tripId": "trip-2001",
+    "routeId": "route-4",
+    "routeShortName": "4",
+    "routeMode": "tram",
+    "stopId": "hbf",
+    "scheduledTime": "2026-11-21T08:02:00+01:00",
+    "expectedTime": "2026-11-21T08:02:00+01:00",
+    "status": "on_time"
+  },
+  {
+    "tripId": "trip-2002",
+    "routeId": "route-H",
+    "routeShortName": "H",
+    "routeMode": "bus",
+    "stopId": "hbf",
+    "scheduledTime": "2026-11-21T08:12:00+01:00",
+    "expectedTime": "2026-11-21T08:32:00+01:00",
+    "status": "delayed"
+  },
+  {
+    "tripId": "trip-2003",
+    "routeId": "route-9",
+    "routeShortName": "9",
+    "routeMode": "tram",
+    "stopId": "hbf",
+    "scheduledTime": "2026-11-21T08:22:00+01:00",
+    "expectedTime": "2026-11-21T08:22:00+01:00",
+    "status": "on_time"
+  }
+]

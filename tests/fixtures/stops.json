@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "stopId": "luisenplatz",
+    "name": "Darmstadt Luisenplatz",
+    "latitude": 49.8728,
+    "longitude": 8.6512
+  },
+  {
+    "stopId": "hbf",
+    "name": "Darmstadt Hauptbahnhof",
+    "latitude": 49.8724,
+    "longitude": 8.6327
+  }
+]

@@ -12,6 +12,7 @@ from transit_pipeline.config import (
     get_settings,
     is_pytest_running,
 )
+from transit_pipeline.ingestion.fetcher import MockTransitClient, create_fetcher
 
 
 def test_pytest_is_detected() -> None:
@@ -77,3 +78,32 @@ def test_get_settings_is_cached() -> None:
         assert get_settings() is get_settings()
     finally:
         get_settings.cache_clear()
+
+
+def test_factory_returns_mock_client_in_mock_mode(settings: Settings) -> None:
+    assert isinstance(create_fetcher(settings), MockTransitClient)
+
+
+def test_mock_fetcher_returns_stop_metadata(mock_fetcher: MockTransitClient) -> None:
+    stops = mock_fetcher.fetch_stops()
+
+    assert {stop["stopId"] for stop in stops} == {"luisenplatz", "hbf"}
+
+
+def test_mock_fetcher_filters_departures_by_stop(
+    mock_fetcher: MockTransitClient,
+) -> None:
+    departures = mock_fetcher.fetch_departures("luisenplatz")
+
+    assert departures
+    assert all(record["stopId"] == "luisenplatz" for record in departures)
+
+
+def test_fixture_covers_duplicates_and_malformed_records(
+    mock_fetcher: MockTransitClient,
+) -> None:
+    departures = mock_fetcher.fetch_departures("luisenplatz")
+    trip_ids = [record.get("tripId") for record in departures]
+
+    assert None in trip_ids
+    assert len(trip_ids) != len(set(trip_ids))

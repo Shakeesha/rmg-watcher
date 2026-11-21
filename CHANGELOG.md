@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-21
+
+### Added
+
+- `TransitFetcher` protocol and a deterministic `MockTransitClient` backed by
+  JSON fixtures.
+- Fetcher factory that selects the mock client in mock mode.
+- Shared pytest fixtures for isolated settings and mock fetching.
+- Autouse outbound network guard that blocks non-local socket connections.
+- Stop and departure fixtures covering valid, duplicate, cancelled, and
+  malformed records.
+
 ## [0.3.0] - 2026-11-21
 
 ### Added
