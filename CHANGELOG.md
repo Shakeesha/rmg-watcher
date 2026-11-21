@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-21
+
+### Added
+
+- `TransitRepository` with idempotent dimension and fact upserts, quarantine
+  logging, and UI read queries.
+- Data quality gates reconciling raw, valid, loaded, deduplicated, and
+  quarantined counts plus null and foreign-key checks.
+- Pipeline orchestration for the ingest, transform, load, and quality phases.
+- CLI commands: `ingest`, `transform`, `run`, and `quality-check`.
+- `python -m transit_pipeline` entry point.
+- Analytical SQL queries for punctuality, top delays, and pipeline runs.
+- Storage, quality, CLI, and end-to-end pipeline tests.
+
 ## [0.6.0] - 2026-11-21
 
 ### Added

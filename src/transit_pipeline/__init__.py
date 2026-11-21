@@ -1,3 +1,3 @@
 """Transit delay telemetry pipeline for the Raspberry Pi 5 kiosk device."""
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
