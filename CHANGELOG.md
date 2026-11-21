@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-21
+
+### Added
+
+- Pydantic departure validation with camelCase aliases, timezone
+  normalization, status normalization, and plausibility bounds.
+- Quarantine records with stable SHA-256 hashes and human-readable reasons.
+- O(1) deduplication keyed on `(trip_id, stop_id)`.
+- Delay enrichment with on-time, minor, major, severe, and cancelled
+  categories.
+- Metrics for punctuality, median and p95 delays, top-k delayed routes, and
+  transfer-connection risk.
+- Helpers that derive domain stops and routes from raw payloads.
+- Transformation tests covering duplicates, malformed records, boundaries, and
+  transfer risk.
+
 ## [0.5.0] - 2026-11-21
 
 ### Added
