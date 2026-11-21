@@ -35,9 +35,21 @@ frontend/dist (Svelte 5 kiosk) -- polls every 15 seconds
 
 `transit-pipeline.timer` starts one ingest -> transform -> load -> quality run
 every 60 seconds. `transit-api.service` keeps the read API and frontend online.
-`transit-kiosk.service` opens the built UI fullscreen and restarts the browser
-if it exits. The optional `transit-gpio-nav.service` maps five physical buttons
-to the same keys handled by `navigation.ts`.
+`transit-kiosk.service` opens the built UI fullscreen on the attached touch
+display and restarts the browser if it exits. There is no GPIO navigation
+service: the display uses the GPIO header for power and the UPS HAT (E) powers
+the Pi through pogo pins.
+
+## Attached hardware
+
+- **Raspberry Pi 5 (4 GB)** booted from the **256 GB NVMe SSD kit** (M.2 HAT+).
+  The OS, project, SQLite database, raw snapshots, and quarantine files all
+  live on the SSD, which avoids SD-card wear from the per-minute pipeline.
+- **Waveshare UPS HAT (E)** connected via pogo pins; it provides 5 V / 6 A
+  backup power and reports battery state over I²C. It does not consume GPIO
+  pins for navigation.
+- **Raspberry Pi Touch Display 2, 5" portrait** (720×1280) connected by DSI,
+  with a five-finger capacitive touch panel. Navigation is entirely by touch.
 
 ## Memory budget (4 GB Raspberry Pi 5)
 
@@ -88,4 +100,4 @@ the pipeline container at 512 MB, keeping total container memory at 1.28 GB.
 - **Container:** `docker compose -f deploy/docker-compose.rpi5.yml up -d --build`
   builds a Python 3.12 image with the compiled frontend and runs the API plus a
   looping pipeline worker. The kiosk browser still runs on the host so it can
-  use the display and GPIO.
+  use the DSI touch display and the UPS HAT's I²C monitoring.

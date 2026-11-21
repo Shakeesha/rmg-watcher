@@ -5,8 +5,8 @@ and serves a small-screen Svelte UI from a single FastAPI process.
 
 - **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
-- **Deployment:** systemd units for the Pi 5, optional GPIO buttons, optional Compose image
-- **Version:** 0.10.0
+- **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
+- **Version:** 0.10.1
 
 ## Status
 
@@ -83,12 +83,18 @@ and Node 22.
 
 ## Raspberry Pi 5 deployment
 
-Assumptions: Raspberry Pi OS Bookworm 64-bit, a graphical session that
-auto-logs in as `transit`, and the project installed at `/opt/transit-kiosk`.
+Assumptions: Raspberry Pi 5 (4 GB) booted from the 256 GB NVMe SSD kit,
+Raspberry Pi OS Bookworm 64-bit with a graphical session that auto-logs in as
+`transit`, the Waveshare UPS HAT (E) on the pogo-pin connector, and the 5"
+portrait touch display on DSI. The project is installed at `/opt/transit-kiosk`.
+
+Boot from the SSD with `sudo raspi-config` (6 Advanced Options → A6 Boot Order →
+NVMe) or by setting `BOOT_ORDER=0xf2` with `sudo rpi-eeprom-config --edit`, then
+reboot and confirm the root device is `/dev/nvme0n1p2`.
 
 ```bash
 sudo useradd --system --create-home --shell /usr/sbin/nologin transit
-sudo usermod -aG video,render,input,audio transit
+sudo usermod -aG video,render,audio transit
 sudo mkdir -p /opt/transit-kiosk
 sudo chown transit:transit /opt/transit-kiosk
 sudo -u transit git clone <repository-url> /opt/transit-kiosk
@@ -121,27 +127,11 @@ sudo systemctl enable --now transit-api.service transit-pipeline.timer transit-k
 then launches Chromium fullscreen and restarts it if it exits. It derives
 `XDG_RUNTIME_DIR` from the service user, so no hard-coded UID is needed.
 
-### Optional GPIO buttons
-
-```bash
-sudo -u transit /opt/transit-kiosk/.venv/bin/pip install gpiozero evdev
-echo uinput | sudo tee /etc/modules-load.d/uinput.conf
-sudo modprobe uinput
-sudo tee /etc/udev/rules.d/99-uinput.rules >/dev/null <<'EOF'
-KERNEL=="uinput", GROUP="input", MODE="0660"
-EOF
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-sudo systemctl enable --now transit-gpio-nav.service
-```
-
-The default BCM pins and key mapping are documented in
-[docs/hardware_ui.md](docs/hardware_ui.md).
-
 ### Container alternative
 
 The Compose stack runs the API and a looping pipeline worker. The kiosk browser
-still runs on the host so it can use the display and GPIO.
+still runs on the host so it can use the DSI touch display; the UPS HAT remains
+independent of the containers.
 
 ```bash
 cp .env.example .env          # configure credentials first
@@ -165,4 +155,4 @@ data/                   Runtime storage (gitignored)
 
 - [Architecture and memory budget](docs/architecture.md)
 - [Star schema and metrics](docs/schema.md)
-- [Kiosk layout and GPIO navigation](docs/hardware_ui.md)
+- [Kiosk layout and touch navigation](docs/hardware_ui.md)

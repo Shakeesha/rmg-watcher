@@ -1,18 +1,20 @@
 # Hardware UI
 
-The kiosk UI is built for small landscape displays such as 800×480 and
-1024×600. It is served by FastAPI from the static Vite bundle, so the Pi needs
-no Node.js runtime after deployment.
+The kiosk is built for the attached **Raspberry Pi Touch Display 2 (5",
+portrait)** at **720×1280**. It is a DSI display with a five-finger capacitive
+touch panel; its power lead uses the GPIO header, so no GPIO pins are available
+for navigation buttons. The UI is served by FastAPI from the static Vite bundle,
+so the Pi needs no Node.js runtime after deployment.
 
 ## Layout
 
-- **Top bar** — product mark and three view buttons: Live, Delays, Transfers.
+- **Top bar** — product mark and three touch buttons: Live, Delays, Transfers.
 - **Stop selector** — shown only in the Live view; remembers the last selected
   stop in local storage and defaults to `luisenplatz` when available.
 - **Status banner** — connection, stale-data, database, pipeline, and mock-mode
   state. It refreshes its relative timestamp every 10 seconds.
 - **Content area** — one view at a time with no page-level scrolling; long
-  lists scroll inside the view.
+  lists scroll inside the view. The portrait height gives room for several rows.
 
 ## Views
 
@@ -26,16 +28,18 @@ no Node.js runtime after deployment.
 
 - All interactive controls are at least 64×64 px, except compact stop chips
   which are 52 px tall inside a 68 px bar.
-- Every focusable control uses the global `:focus-visible` ring.
+- Every focusable control uses the global `:focus-visible` ring, which also
+  gives visual feedback after a tap.
 - Colour is never the only signal: status text and badges accompany the
   green/amber/red accents.
 
-## Keyboard and hardware buttons
+## Input model
 
-`frontend/src/lib/navigation.ts` installs one key handler for both a USB
-keyboard and the optional GPIO-to-key bridge:
+The device is operated by touch. `frontend/src/lib/navigation.ts` also keeps a
+keyboard handler for development and debugging; it is not tied to any physical
+buttons on the device.
 
-| Key | Action |
+| Key | Action (debug only) |
 | --- | --- |
 | Arrow keys | Move focus through controls marked `data-nav`. |
 | Enter / Space | Activate the focused control. |
@@ -43,8 +47,8 @@ keyboard and the optional GPIO-to-key bridge:
 | PageUp | Previous view. |
 | Escape | Return to the Live view. |
 
-Buttons expose `data-nav` so the same handler works for touch targets and
-physical buttons.
+The three view buttons, stop chips, and any focused control are all reachable
+with a finger. There is no GPIO navigation service in the deployment.
 
 ## Polling
 
@@ -52,21 +56,3 @@ The root component refreshes health, stops, metrics, and the selected stop's
 departures every 15 seconds. The browser's online/offline events trigger an
 immediate refresh when connectivity returns. Failed requests leave the last
 known data visible and switch the status banner to an error state.
-
-## GPIO bridge (optional)
-
-`deploy/scripts/gpio_to_keys.py` creates a virtual keyboard with `evdev` and
-uses `gpiozero` to watch five buttons. Wire each button between its BCM pin and
-ground:
-
-| BCM pin | Key | UI action |
-| --- | --- | --- |
-| 17 | Right | Focus the next control |
-| 27 | Left | Focus the previous control |
-| 22 | Enter | Activate the focused control |
-| 23 | PageDown | Next view |
-| 24 | PageUp | Previous view |
-
-Install `python3-gpiozero` and `python3-evdev`, load the `uinput` module, and
-grant the `input` group access to `/dev/uinput`. Then enable
-`transit-gpio-nav.service`. See README.md for the exact commands.

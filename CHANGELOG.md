@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-21
+
+### Removed
+
+- `gpio_to_keys.py` and `transit-gpio-nav.service`. The attached 5" portrait
+  touch display takes power from the GPIO header and the UPS HAT (E) uses pogo
+  pins, so there are no GPIO pins available for navigation buttons.
+
+### Changed
+
+- Deployment and hardware documentation now target the 256 GB NVMe SSD, the
+  Waveshare UPS HAT (E), and the 720×1280 DSI capacitive touch display.
+- The kiosk is documented as touch-only; keyboard handling remains for
+  development and debugging.
+
 ## [0.10.0] - 2026-11-21
 
 ### Added
