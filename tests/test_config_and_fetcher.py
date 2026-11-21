@@ -1,1 +1,79 @@
 """Tests for automatic mock mode under pytest and client behavior."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from transit_pipeline.config import (
+    PROJECT_ROOT,
+    Settings,
+    get_settings,
+    is_pytest_running,
+)
+
+
+def test_pytest_is_detected() -> None:
+    assert is_pytest_running() is True
+
+
+def test_mock_mode_is_forced_under_pytest(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PIPELINE_MOCK_MODE", "false")
+    assert Settings(_env_file=None).mock_mode is True
+
+
+def test_explicit_mock_mode_outside_pytest(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("PIPELINE_MOCK_MODE", "true")
+    assert Settings(_env_file=None).mock_mode is True
+
+
+def test_live_mode_outside_pytest(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.delenv("PIPELINE_MOCK_MODE", raising=False)
+    assert Settings(_env_file=None).mock_mode is False
+
+
+def test_defaults_target_project_directories(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in (
+        "DATABASE_PATH",
+        "RAW_STORE_PATH",
+        "QUARANTINE_PATH",
+        "FRONTEND_DIST_PATH",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.database_path == PROJECT_ROOT / "data" / "transit.db"
+    assert settings.raw_store_path == PROJECT_ROOT / "data" / "raw"
+    assert settings.quarantine_path == PROJECT_ROOT / "data" / "quarantine"
+    assert settings.frontend_dist_path == PROJECT_ROOT / "frontend" / "dist"
+
+
+def test_environment_paths_are_loaded(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_PATH", "custom/transit.db")
+    assert Settings(_env_file=None).database_path == Path("custom/transit.db")
+
+
+def test_blank_api_key_is_treated_as_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRANSIT_API_KEY", "   ")
+    assert Settings(_env_file=None).transit_api_key is None
+
+
+def test_api_key_is_masked(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRANSIT_API_KEY", "secret-key")
+    settings = Settings(_env_file=None)
+
+    assert settings.transit_api_key is not None
+    assert settings.transit_api_key.get_secret_value() == "secret-key"
+    assert "secret-key" not in repr(settings)
+
+
+def test_get_settings_is_cached() -> None:
+    get_settings.cache_clear()
+    try:
+        assert get_settings() is get_settings()
+    finally:
+        get_settings.cache_clear()
