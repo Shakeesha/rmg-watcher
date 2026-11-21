@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-21
+
+### Added
+
+- `LiveTransitClient` with API-key headers, strict timeouts, and support for
+  list and wrapped collection payloads.
+- Retry policy with exponential backoff, `Retry-After` handling, and retries
+  for transient HTTP status codes.
+- `RawStore` for atomic, date-partitioned raw payload snapshots with batch
+  metadata.
+- Live client, retry, and raw storage tests.
+
 ## [0.4.0] - 2026-11-21
 
 ### Added
