@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env
+
+# Runtime data
+data/raw/*
+data/quarantine/*
+!data/raw/.gitkeep
+!data/quarantine/.gitkeep
+data/*.db
+data/*.db-*
+data/*.sqlite3
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE and OS
+.idea/
+.vscode/
+.awb/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
