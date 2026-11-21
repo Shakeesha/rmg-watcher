@@ -35,6 +35,8 @@ def _build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("quality-check", help="check the latest run and database")
 
+    subparsers.add_parser("serve", help="serve the API and built frontend")
+
     return parser
 
 
@@ -110,6 +112,17 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "quality-check":
         return _quality_check()
+
+    if args.command == "serve":
+        import uvicorn
+
+        uvicorn.run(
+            "transit_pipeline.api.app:app",
+            host=settings.api_host,
+            port=settings.api_port,
+            log_level=settings.log_level.lower(),
+        )
+        return 0
 
     parser.print_help()
     return 1

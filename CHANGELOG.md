@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-21
+
+### Added
+
+- FastAPI application factory with lifespan-managed SQLite initialization.
+- Read endpoints: `/api/health`, `/api/stops`, `/api/departures/{stop_id}`, and
+  `/api/metrics`.
+- Metrics response with punctuality, median/p95 delays, top delayed routes, and
+  transfer risks.
+- Static frontend serving with `/assets` mounting and an SPA fallback.
+- `serve` CLI command backed by Uvicorn.
+- API tests covering endpoints, errors, and static serving.
+
 ## [0.7.0] - 2026-11-21
 
 ### Added

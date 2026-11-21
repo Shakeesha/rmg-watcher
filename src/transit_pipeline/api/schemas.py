@@ -1,1 +1,79 @@
 """Pydantic response models for the kiosk UI."""
+
+from __future__ import annotations
+
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class HealthResponse(BaseModel):
+    """Service and pipeline health for the status banner."""
+
+    status: str
+    database_ok: bool
+    mock_mode: bool
+    version: str
+    stop_count: int = Field(ge=0)
+    event_count: int = Field(ge=0)
+    last_run_at: datetime | None = None
+    last_run_status: str | None = None
+
+
+class StopResponse(BaseModel):
+    """A configured stop."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    stop_id: str
+    name: str
+    latitude: float | None = None
+    longitude: float | None = None
+
+
+class DepartureResponse(BaseModel):
+    """A departure row for the live view."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    trip_id: str
+    route_id: str
+    route_short_name: str
+    stop_id: str
+    stop_name: str
+    scheduled_time: datetime
+    expected_time: datetime | None = None
+    delay_seconds: int | None = None
+    delay_category: str
+    status: str
+
+
+class RouteDelayResponse(BaseModel):
+    """Worst observed delay for a route."""
+
+    route_id: str
+    max_delay_seconds: int
+
+
+class TransferRiskResponse(BaseModel):
+    """A connection at risk at a stop."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    stop_id: str
+    inbound_route_id: str
+    outbound_route_id: str
+    scheduled_transfer_seconds: int
+    projected_slack_seconds: int
+    at_risk: bool
+
+
+class MetricsResponse(BaseModel):
+    """Delay metrics and transfer risks for the delays and transfers views."""
+
+    total_events: int = Field(ge=0)
+    punctuality_rate: float = Field(ge=0.0, le=1.0)
+    median_delay_seconds: float | None = None
+    p95_delay_seconds: float | None = None
+    top_delayed_routes: list[RouteDelayResponse]
+    transfer_risks: list[TransferRiskResponse]

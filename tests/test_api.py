@@ -1,1 +1,112 @@
 """Tests for FastAPI endpoints against an isolated test database."""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from transit_pipeline.api.app import create_app
+from transit_pipeline.config import Settings
+from transit_pipeline.pipeline import run_pipeline
+from transit_pipeline.storage.db import Database
+from transit_pipeline.storage.repository import TransitRepository
+
+
+@pytest.fixture
+def repository(settings: Settings) -> TransitRepository:
+    run_pipeline(settings, batch_id="api-seed")
+    return TransitRepository(Database(settings.database_path))
+
+
+@pytest.fixture
+def client(settings: Settings, repository: TransitRepository) -> Iterator[TestClient]:
+    app = create_app(settings=settings, repository=repository)
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def test_health_reports_pipeline_state(client: TestClient) -> None:
+    response = client.get("/api/health")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["database_ok"] is True
+    assert body["mock_mode"] is True
+    assert body["stop_count"] == 2
+    assert body["event_count"] == 7
+    assert body["last_run_status"] == "ok"
+
+
+def test_stops_are_sorted_by_name(client: TestClient) -> None:
+    response = client.get("/api/stops")
+
+    assert response.status_code == 200
+    names = [stop["name"] for stop in response.json()]
+    assert names == ["Darmstadt Hauptbahnhof", "Darmstadt Luisenplatz"]
+
+
+def test_departures_include_delay_information(client: TestClient) -> None:
+    response = client.get("/api/departures/luisenplatz")
+
+    assert response.status_code == 200
+    departures = response.json()
+    assert len(departures) == 4
+    assert departures[0]["trip_id"] == "trip-1001"
+    assert departures[0]["delay_seconds"] == 240
+    assert departures[0]["delay_category"] == "minor"
+
+
+def test_departures_support_a_limit(client: TestClient) -> None:
+    response = client.get("/api/departures/luisenplatz?limit=2")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+
+def test_unknown_stop_returns_404(client: TestClient) -> None:
+    response = client.get("/api/departures/unknown")
+
+    assert response.status_code == 404
+
+
+def test_metrics_include_transfer_risks(client: TestClient) -> None:
+    response = client.get("/api/metrics")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_events"] == 7
+    assert body["top_delayed_routes"][0] == {
+        "route_id": "route-H",
+        "max_delay_seconds": 1200,
+    }
+    assert body["transfer_risks"]
+    assert body["transfer_risks"][0]["at_risk"] is True
+
+
+def test_missing_frontend_reports_build_hint(client: TestClient) -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.json()["message"] == "Frontend bundle not built"
+
+
+def test_built_frontend_is_served(
+    settings: Settings,
+    tmp_path: Path,
+) -> None:
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<html>kiosk</html>", encoding="utf-8")
+    (dist / "assets" / "app.js").write_text("console.log('ok')", encoding="utf-8")
+    app = create_app(
+        settings=settings.model_copy(update={"frontend_dist_path": dist})
+    )
+
+    with TestClient(app) as test_client:
+        assert test_client.get("/").text == "<html>kiosk</html>"
+        assert test_client.get("/assets/app.js").text == "console.log('ok')"
+        assert test_client.get("/unknown-route").text == "<html>kiosk</html>"
