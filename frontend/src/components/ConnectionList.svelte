@@ -29,6 +29,7 @@
   let toStop = $state('')
   let travelTime = $state('')
   let arriveBy = $state(false)
+  let expanded = $state<Record<string, boolean>>({})
 
   $effect(() => {
     if (selectedStopId && !fromStop) fromStop = selectedStopId
@@ -78,6 +79,16 @@
   function shiftTime(minutes: number): void {
     const base = travelTime ? new Date(travelTime) : new Date()
     travelTime = toLocalInput(new Date(base.getTime() + minutes * 60_000))
+  }
+
+  function toggleDetails(key: string): void {
+    expanded[key] = !expanded[key]
+  }
+
+  function routeStyle(color: string | null): string {
+    if (!color) return ''
+    const value = color.startsWith('#') ? color : `#${color}`
+    return `background-color: ${value}`
   }
 
   function search(): void {
@@ -223,15 +234,54 @@
 
           <div class="legs">
             {#each connection.legs as leg, legIndex (legIndex)}
-              <span class="leg">
-                <span class="route-chip">{routeLabel(leg.route, leg.mode)}</span>
-                <span class="leg-stops">
-                  {leg.from_name} → {leg.to_name}
-                </span>
-                <span class="leg-time">
-                  {formatTime(leg.departure)}–{formatTime(leg.arrival)}
-                </span>
-              </span>
+              {@const legKey = `${index}-${legIndex}`}
+              <div class="leg-detail">
+                <div class="leg-head">
+                  <span class="route-bar" style={routeStyle(leg.route_color)}>
+                    {routeLabel(leg.route, leg.mode)}
+                  </span>
+                  <span class="leg-stops">
+                    {leg.from_name}{leg.from_platform ? ` (${leg.from_platform})` : ''}
+                    →
+                    {leg.to_name}{leg.to_platform ? ` (${leg.to_platform})` : ''}
+                  </span>
+                  <span class="leg-time">
+                    {formatTime(leg.departure)}–{formatTime(leg.arrival)}
+                  </span>
+                </div>
+
+                {#if leg.headsign}
+                  <p class="leg-meta">towards {leg.headsign}</p>
+                {/if}
+                {#if leg.operator}
+                  <p class="leg-meta">{leg.operator}</p>
+                {/if}
+
+                {#if leg.intermediate_stops.length > 0}
+                  <button
+                    type="button"
+                    class="details-toggle"
+                    data-nav
+                    onclick={() => toggleDetails(legKey)}
+                  >
+                    {expanded[legKey] ? 'Hide' : 'Show'}
+                    {leg.intermediate_stops.length} intermediate stop(s)
+                  </button>
+                  {#if expanded[legKey]}
+                    <ol class="intermediate">
+                      {#each leg.intermediate_stops as stop, stopIndex (stopIndex)}
+                        <li>
+                          <span>{formatTime(stop.departure ?? stop.arrival ?? '')}</span>
+                          <span>{stop.name}</span>
+                          {#if stop.platform}
+                            <span class="platform">{stop.platform}</span>
+                          {/if}
+                        </li>
+                      {/each}
+                    </ol>
+                  {/if}
+                {/if}
+              </div>
             {/each}
           </div>
         </li>
@@ -446,24 +496,71 @@
     gap: 6px;
   }
 
-  .leg {
+  .leg-detail {
+    padding: 8px 0;
+    border-bottom: 1px solid #1f2a36;
+  }
+
+  .leg-detail:last-child {
+    border-bottom: 0;
+  }
+
+  .leg-head {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
   }
 
-  .route-chip {
+  .route-bar {
     display: grid;
     place-items: center;
-    min-width: 44px;
-    height: 34px;
-    padding: 0 8px;
+    min-width: 56px;
+    min-height: 34px;
+    padding: 0 10px;
     border-radius: 6px;
     background: #e8edf2;
     color: #0b0f14;
-    font-size: 0.85rem;
     font-weight: 800;
+  }
+
+  .leg-meta {
+    margin: 4px 0 0 66px;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+  }
+
+  .details-toggle {
+    min-height: 40px;
+    margin: 6px 0 0 66px;
+    padding: 0 12px;
+    border: 1px solid #2d3a49;
+    border-radius: 999px;
+    background: transparent;
+    color: #bde9ff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .intermediate {
+    margin: 8px 0 0 66px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .intermediate li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+  }
+
+  .intermediate .platform {
+    margin-left: auto;
+    color: var(--color-text);
   }
 
   .leg-stops {

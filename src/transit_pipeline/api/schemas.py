@@ -85,15 +85,30 @@ class AlertResponse(BaseModel):
     stop_id: str | None = None
 
 
+class ConnectionStopResponse(BaseModel):
+    """An intermediate stop on a journey leg."""
+
+    name: str
+    arrival: datetime | None = None
+    departure: datetime | None = None
+    platform: str | None = None
+
+
 class ConnectionLegResponse(BaseModel):
     """One leg of a planned connection."""
 
     mode: str
     route: str | None = None
+    route_color: str | None = None
+    headsign: str | None = None
+    operator: str | None = None
     from_name: str
     to_name: str
+    from_platform: str | None = None
+    to_platform: str | None = None
     departure: datetime
     arrival: datetime
+    intermediate_stops: list[ConnectionStopResponse] = Field(default_factory=list)
 
 
 class ConnectionResponse(BaseModel):

@@ -66,13 +66,26 @@ export interface Metrics {
   transfer_risks: TransferRisk[]
 }
 
+export interface ConnectionStop {
+  name: string
+  arrival: string | null
+  departure: string | null
+  platform: string | null
+}
+
 export interface ConnectionLeg {
   mode: string
   route: string | null
+  route_color: string | null
+  headsign: string | null
+  operator: string | null
   from_name: string
   to_name: string
+  from_platform: string | null
+  to_platform: string | null
   departure: string
   arrival: string
+  intermediate_stops: ConnectionStop[]
 }
 
 export interface Connection {

@@ -18,6 +18,7 @@ from transit_pipeline.api.schemas import (
     AlertResponse,
     ConnectionLegResponse,
     ConnectionResponse,
+    ConnectionStopResponse,
     DepartureResponse,
     HealthResponse,
     MetricsResponse,
@@ -281,16 +282,55 @@ def _connections(
                 continue
             mode = leg.get("mode")
             route = leg.get("routeShortName") or leg.get("displayName")
+            color = leg.get("routeColor")
+            operator = leg.get("agencyName")
+            headsign = leg.get("headsign")
+
+            intermediates: list[ConnectionStopResponse] = []
+            raw_stops = leg.get("intermediateStops")
+            if isinstance(raw_stops, list):
+                for stop in raw_stops:
+                    if not isinstance(stop, dict):
+                        continue
+                    intermediates.append(
+                        ConnectionStopResponse(
+                            name=str(stop.get("name") or ""),
+                            arrival=(
+                                _as_datetime(stop["arrival"])
+                                if stop.get("arrival")
+                                else None
+                            ),
+                            departure=(
+                                _as_datetime(stop["departure"])
+                                if stop.get("departure")
+                                else None
+                            ),
+                            platform=(
+                                str(stop["track"]) if stop.get("track") else None
+                            ),
+                        )
+                    )
+
             legs.append(
                 ConnectionLegResponse(
                     mode=str(mode).lower() if mode is not None else "transit",
                     route=str(route) if route is not None else None,
+                    route_color=str(color) if isinstance(color, str) else None,
+                    headsign=str(headsign) if isinstance(headsign, str) else None,
+                    operator=str(operator) if isinstance(operator, str) else None,
                     from_name=str(origin.get("name") or ""),
                     to_name=str(destination.get("name") or ""),
+                    from_platform=(
+                        str(origin["track"]) if origin.get("track") else None
+                    ),
+                    to_platform=(
+                        str(destination["track"]) if destination.get("track") else None
+                    ),
                     departure=_as_datetime(
                         leg.get("startTime") or itinerary.get("startTime")
                     ),
                     arrival=_as_datetime(leg.get("endTime") or itinerary.get("endTime")),
+                    intermediate_stops=intermediates,
                 )
             )
         result.append(
