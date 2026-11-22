@@ -13,15 +13,12 @@ policy.
 - Saved/favourite connections and recent searches.
 - Disruption messages with alternative routes.
 - Timetable lookups and line/route maps.
-- Accessibility information, seat reservation, and ticket purchase.
 - Station information and on-site facilities.
 
 ### HEAG mobilo
 
 - Local trip planning, live vehicle positions, and a map view.
 - **Störungsmelder** service alerts filterable by line and date.
-- Tickets: Deutschlandticket, Schülerticket, Jobticket.
-- Barrier-free travel information.
 - AirLiner airport connection and regional tram extensions.
 - Construction/project notices.
 

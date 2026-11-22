@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-11-22
+
+### Fixed
+
+- Connection autocomplete closes after a selection and blocks search until the
+  Transitous ID has resolved.
+- Free multi-word typing in both From and To fields no longer reopens the
+  suggestion list after selection.
+
 ## [0.16.1] - 2026-11-22
 
 ### Fixed

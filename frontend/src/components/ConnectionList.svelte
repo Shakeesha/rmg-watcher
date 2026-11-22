@@ -34,16 +34,19 @@
 
   let fromText = $state('')
   let toText = $state('')
+  let fromSelectedText = $state('')
+  let toSelectedText = $state('')
   let fromSuggestions = $state<PlaceResult[]>([])
   let toSuggestions = $state<PlaceResult[]>([])
   let fromLoading = $state(false)
   let toLoading = $state(false)
   let fromController: AbortController | null = null
   let toController: AbortController | null = null
+  let resolving = $state(false)
 
   $effect(() => {
     const term = fromText.trim()
-    if (term.length < 2 || term === fromStop) {
+    if (term.length < 2 || term === fromSelectedText) {
       fromSuggestions = []
       return
     }
@@ -68,7 +71,7 @@
 
   $effect(() => {
     const term = toText.trim()
-    if (term.length < 2 || term === toStop) {
+    if (term.length < 2 || term === toSelectedText) {
       toSuggestions = []
       return
     }
@@ -93,33 +96,44 @@
 
   async function chooseFrom(place: PlaceResult): Promise<void> {
     fromSuggestions = []
+    resolving = true
     let selected = place
     try {
       selected = (await resolvePlace(place.id)) ?? place
     } catch {
       selected = place
+    } finally {
+      resolving = false
     }
     fromStop = selected.id
     fromText = selected.name
+    fromSelectedText = selected.name
   }
 
   async function chooseTo(place: PlaceResult): Promise<void> {
     toSuggestions = []
+    resolving = true
     let selected = place
     try {
       selected = (await resolvePlace(place.id)) ?? place
     } catch {
       selected = place
+    } finally {
+      resolving = false
     }
     toStop = selected.id
     toText = selected.name
+    toSelectedText = selected.name
   }
 
   $effect(() => {
     if (selectedStopId && !fromStop) {
       fromStop = selectedStopId
       const stop = stops.find((item) => item.stop_id === selectedStopId)
-      if (stop) fromText = stop.name
+      if (stop) {
+        fromText = stop.name
+        fromSelectedText = stop.name
+      }
     }
   })
 
@@ -146,16 +160,21 @@
   }
 
   function canSearch(): boolean {
-    return fromStop !== '' && toStop !== '' && fromStop !== toStop
+    return (
+      !resolving && fromStop !== '' && toStop !== '' && fromStop !== toStop
+    )
   }
 
   function swapStops(): void {
     const previousId = fromStop
     const previousText = fromText
+    const previousSelected = fromSelectedText
     fromStop = toStop
     fromText = toText
+    fromSelectedText = toSelectedText
     toStop = previousId
     toText = previousText
+    toSelectedText = previousSelected
   }
 
   function toLocalInput(date: Date): string {
@@ -224,6 +243,7 @@
         placeholder="Any stop in Germany"
         aria-label="From stop"
         bind:value={fromText}
+        oninput={() => (fromSelectedText = '')}
         data-nav
       />
       {#if fromText.trim().length >= 2 && fromText !== fromStop}
@@ -256,6 +276,7 @@
         placeholder="Any stop in Germany"
         aria-label="To stop"
         bind:value={toText}
+        oninput={() => (toSelectedText = '')}
         data-nav
       />
       {#if toText.trim().length >= 2 && toText !== toStop}
@@ -353,6 +374,8 @@
             const parts = favourite.label.split(' → ')
             fromText = parts[0] ?? favourite.from
             toText = parts[1] ?? favourite.to
+            fromSelectedText = fromText
+            toSelectedText = toText
             onSelectFavourite(favourite)
           }}
         >
