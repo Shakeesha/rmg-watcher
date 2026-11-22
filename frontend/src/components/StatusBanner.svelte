@@ -7,9 +7,10 @@
     error: string | null
     online: boolean
     lastUpdated: Date | null
+    warning: string | null
   }
 
-  let { health, error, online, lastUpdated }: Props = $props()
+  let { health, error, online, lastUpdated, warning }: Props = $props()
 
   let now = $state(Date.now())
 
@@ -32,6 +33,7 @@
     if (!online) return 'offline'
     if (error) return 'error'
     if (health !== null && !health.database_ok) return 'error'
+    if (warning) return 'warning'
     if (stale) return 'stale'
     if (health !== null && health.status !== 'ok') return 'warning'
     return 'ok'
@@ -42,6 +44,7 @@
     if (error) return 'Connection problem — retrying automatically'
     if (health === null) return 'Connecting to the transit service…'
     if (!health.database_ok) return 'Database unavailable — retrying automatically'
+    if (warning) return warning
     if (stale) return 'Data is stale — waiting for the next refresh'
     if (health.status !== 'ok') return 'Pipeline degraded — last run needs attention'
     if (health.mock_mode) return 'Mock data — pipeline is running without the live API'

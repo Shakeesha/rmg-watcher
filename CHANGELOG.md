@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connection warnings now consider service alerts affecting the journey routes.
 - Departures expose wheelchair accessibility with an accessible-only filter.
 - Departure cache now serves stale timetable data when Transitous is offline.
+- Cancellations and severe delays are promoted into the status banner.
 
 ## [0.16.2] - 2026-11-22
 

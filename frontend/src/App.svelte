@@ -72,6 +72,18 @@
     ),
   )
 
+  const serviceWarning = $derived.by(() => {
+    const cancelled = departures.filter((item) => item.status === 'cancelled').length
+    if (cancelled > 0) {
+      return `${cancelled} cancelled departure${cancelled === 1 ? '' : 's'}`
+    }
+    const severe = departures.filter(
+      (item) => item.delay_category === 'severe',
+    ).length
+    if (severe > 0) return `${severe} severe delay${severe === 1 ? '' : 's'}`
+    return null
+  })
+
   const mapCenter = $derived.by(() => {
     if (
       selectedPlace !== null &&
@@ -386,7 +398,7 @@
     {/if}
   {/if}
 
-  <StatusBanner {health} {error} {online} {lastUpdated} />
+  <StatusBanner {health} {error} {online} {lastUpdated} warning={serviceWarning} />
 
   <main class="kiosk-content">
     {#if $activeView === 'live'}
