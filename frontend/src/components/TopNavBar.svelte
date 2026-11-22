@@ -3,9 +3,8 @@
 </script>
 
 <header class="top-nav">
-  <div class="brand" aria-label="Transit kiosk">
-    <span class="brand-mark">RMV</span>
-    <span class="brand-title">RMG-Watcher</span>
+  <div class="brand" aria-label="RMG-Watcher">
+    <span class="brand-mark">RMG-Watcher</span>
   </div>
 
   <nav class="view-switcher" aria-label="Views">
@@ -53,15 +52,6 @@
     letter-spacing: 0.06em;
   }
 
-  .brand-title {
-    overflow: hidden;
-    color: var(--color-muted);
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .view-switcher {
     display: flex;
     gap: 8px;
@@ -88,8 +78,9 @@
   }
 
   @media (max-width: 640px) {
-    .brand-title {
-      display: none;
+    .brand-mark {
+      font-size: 0.8rem;
+      letter-spacing: 0;
     }
 
     .nav-button {

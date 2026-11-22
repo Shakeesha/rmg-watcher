@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggestion list after selection.
 - Suggested stops are limited to three and fetched only on initial load or
   after using **Locate**.
+- Browser tab and top-left badge now show `RMG-Watcher`; the separate label next
+  to the badge was removed.
 
 ## [0.16.1] - 2026-11-22
 
