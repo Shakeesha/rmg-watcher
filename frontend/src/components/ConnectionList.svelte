@@ -39,6 +39,16 @@
   let travelTime = $state('')
   let arriveBy = $state(false)
   let expanded = $state<Record<string, boolean>>({})
+  let selectedIndex = $state<number | null>(null)
+
+  const selectedConnection = $derived(
+    selectedIndex === null ? null : (connections[selectedIndex] ?? null),
+  )
+
+  $effect(() => {
+    connections
+    selectedIndex = null
+  })
 
   let fromText = $state('')
   let toText = $state('')
@@ -203,6 +213,13 @@
     if (!color) return ''
     const value = color.startsWith('#') ? color : `#${color}`
     return `background-color: ${value}`
+  }
+
+  function transitLegs(connection: Connection): Connection['legs'] {
+    return connection.legs.filter((leg) => {
+      const mode = leg.mode.toLowerCase()
+      return !mode.includes('walk') && !mode.includes('foot')
+    })
   }
 
   function tightTransferMinutes(connection: Connection): number[] {
@@ -418,9 +435,17 @@
     <p class="state" role="status">Planning connections…</p>
   {:else if connections.length === 0}
     <p class="state" role="status">Choose two stops to find a connection.</p>
-  {:else}
+  {:else if selectedConnection}
+    <button
+      type="button"
+      class="back-button"
+      data-nav
+      onclick={() => (selectedIndex = null)}
+    >
+      ← All connections
+    </button>
     <ol class="connection-list">
-      {#each connections as connection, index (index)}
+      {#each [selectedConnection] as connection, index (index)}
         {@const tightTransfers = tightTransferMinutes(connection)}
         {@const affected = affectedAlert(connection)}
         <li class="connection-row">
@@ -496,6 +521,45 @@
               </div>
             {/each}
           </div>
+        </li>
+      {/each}
+    </ol>
+  {:else}
+    <ol class="connection-list compact">
+      {#each connections as connection, index (index)}
+        {@const legs = transitLegs(connection)}
+        <li>
+          <button
+            type="button"
+            class="connection-card"
+            data-nav
+            onclick={() => (selectedIndex = index)}
+          >
+            <div class="card-top">
+              <strong>
+                {formatTime(connection.departure)} → {formatTime(connection.arrival)}
+              </strong>
+              <span>
+                {connection.duration_minutes} min ·
+                {connection.transfers === 0
+                  ? 'direct'
+                  : `${connection.transfers} transfer(s)`}
+              </span>
+            </div>
+
+            <div class="route-flow">
+              {#each legs as leg, legIndex (legIndex)}
+                {#if legIndex > 0}
+                  <span class="transfer-icon" aria-hidden="true">🚶</span>
+                {/if}
+                <span class="route-chip" style={routeStyle(leg.route_color)}>
+                  {routeLabel(leg.route, leg.mode)}
+                </span>
+              {/each}
+            </div>
+
+            <p class="card-from">from {legs[0]?.from_name ?? ''}</p>
+          </button>
         </li>
       {/each}
     </ol>
@@ -715,6 +779,68 @@
     list-style: none;
   }
 
+  .back-button {
+    min-height: 44px;
+    align-self: flex-start;
+    padding: 0 14px;
+    border: 1px solid #2d3a49;
+    border-radius: 999px;
+    background: #18212b;
+    color: #bde9ff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .connection-card {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #263241;
+    border-left: 4px solid var(--color-accent);
+    border-radius: 10px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .card-top strong {
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card-top span {
+    color: var(--color-muted);
+    font-size: 0.84rem;
+  }
+
+  .route-flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .transfer-icon {
+    color: var(--color-muted);
+    font-size: 1rem;
+  }
+
+  .card-from {
+    margin: 8px 0 0;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+  }
+
   .connection-row {
     padding: 12px;
     border: 1px solid #263241;
@@ -786,6 +912,19 @@
     border-radius: 6px;
     background: #e8edf2;
     color: #0b0f14;
+    font-weight: 800;
+  }
+
+  .route-chip {
+    display: grid;
+    place-items: center;
+    min-width: 56px;
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 6px;
+    background: #8b5cf6;
+    color: #fff;
+    font-size: 0.85rem;
     font-weight: 800;
   }
 
