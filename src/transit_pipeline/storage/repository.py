@@ -354,6 +354,11 @@ class TransitRepository:
             for row in rows
         ]
 
+    def _stop_names(self) -> dict[str, str]:
+        with self.database.session() as connection:
+            rows = connection.execute("SELECT stop_id, name FROM dim_stops").fetchall()
+        return {str(row["stop_id"]): str(row["name"]) for row in rows if row["name"]}
+
     def _route_names(self) -> dict[str, str]:
         with self.database.session() as connection:
             rows = connection.execute(
@@ -371,11 +376,13 @@ class TransitRepository:
 
     def transfer_risks(self, *, limit: int = 5_000) -> list[TransferRisk]:
         names = self._route_names()
+        stop_names = self._stop_names()
         return [
             replace(
                 risk,
                 inbound_route_name=names.get(risk.inbound_route_id),
                 outbound_route_name=names.get(risk.outbound_route_id),
+                stop_name=stop_names.get(risk.stop_id),
             )
             for risk in assess_transfer_risks(self.list_events(limit=limit))
         ]

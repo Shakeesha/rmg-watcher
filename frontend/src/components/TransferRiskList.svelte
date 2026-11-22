@@ -13,8 +13,19 @@
   const atRiskCount = $derived(risks.filter((risk) => risk.at_risk).length)
   const visibleRisks = $derived(risks.slice(0, 12))
 
-  function stopName(stopId: string): string {
-    return stopNames.get(stopId) ?? stopId
+  function stopName(stopId: string, preferred: string | null): string {
+    if (preferred) return preferred
+    const known = stopNames.get(stopId) ?? stopNames.get(knownId(stopId))
+    if (known) return known
+    if (stopId.toLowerCase() === 'hbf') return 'Darmstadt Hbf'
+    if (stopId.toLowerCase() === 'luisenplatz') return 'Darmstadt Luisenplatz'
+    return stopId.split(':').at(-1) ?? stopId
+  }
+
+  function knownId(stopId: string): string {
+    if (stopId.includes('4736')) return 'de-amarillo-bw_de:06411:4736'
+    if (stopId.includes('4734')) return 'de-DELFI_de:06411:4734'
+    return stopId
   }
 
   function routeLabel(routeId: string): string {
@@ -67,7 +78,7 @@
             </span>
           </span>
 
-          <span class="risk-stop">{stopName(risk.stop_id)}</span>
+          <span class="risk-stop">{stopName(risk.stop_id, risk.stop_name)}</span>
           <span class="risk-slack">{slackText(risk)}</span>
         </li>
       {/each}

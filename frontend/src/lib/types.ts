@@ -48,6 +48,7 @@ export interface RouteDelay {
 
 export interface TransferRisk {
   stop_id: string
+  stop_name: string | null
   inbound_route_id: string
   outbound_route_id: string
   inbound_route_name: string | null

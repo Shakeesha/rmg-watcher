@@ -65,6 +65,7 @@ class TransferRiskResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     stop_id: str
+    stop_name: str | None = None
     inbound_route_id: str
     outbound_route_id: str
     inbound_route_name: str | None = None

@@ -131,7 +131,8 @@
     if (options.initial) loading = true
 
     try {
-      const [nextHealth, nextStops, nextMetrics] = await Promise.all([
+      let refreshError: string | null = null
+      const [healthResult, stopsResult, metricsResult] = await Promise.allSettled([
         fetchHealth(controller.signal),
         fetchSuggestedStops(controller.signal, options.lat, options.lon),
         fetchMetrics(controller.signal),
@@ -139,21 +140,36 @@
 
       if (controller.signal.aborted || disposed) return
 
-      health = nextHealth
-      stops = nextStops
-      metrics = nextMetrics
+      if (healthResult.status === 'rejected') {
+        throw healthResult.reason
+      }
+      health = healthResult.value
+      if (stopsResult.status === 'fulfilled') stops = stopsResult.value
+      if (metricsResult.status === 'fulfilled') metrics = metricsResult.value
 
       if (
         selectedStopId === null ||
-        !nextStops.some((stop) => stop.stop_id === selectedStopId)
+        !stops.some((stop) => stop.stop_id === selectedStopId)
       ) {
-        selectedStopId = pickDefaultStop(nextStops)
+        selectedStopId = pickDefaultStop(stops)
       }
 
       if (selectedStopId === null) {
         departures = []
       } else {
-        departures = await fetchLiveDepartures(selectedStopId, controller.signal, 20, arriveBy)
+        try {
+          departures = await fetchLiveDepartures(
+            selectedStopId,
+            controller.signal,
+            20,
+            arriveBy,
+          )
+        } catch (caught) {
+          if (!isAbortError(caught) && !disposed) {
+            refreshError =
+              caught instanceof Error ? caught.message : 'Unable to load departures'
+          }
+        }
       }
 
       await loadAlerts(controller)
@@ -161,7 +177,7 @@
       if (controller.signal.aborted || disposed) return
 
       lastUpdated = new Date()
-      error = null
+      error = refreshError
     } catch (caught) {
       if (isAbortError(caught) || disposed) return
       error = caught instanceof Error ? caught.message : 'Unable to reach the transit service'

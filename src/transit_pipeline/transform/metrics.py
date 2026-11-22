@@ -31,6 +31,7 @@ class TransferRisk:
     stop_id: str
     inbound_route_id: str
     outbound_route_id: str
+    stop_name: str | None = None
     inbound_route_name: str | None = None
     outbound_route_name: str | None = None
     scheduled_transfer_seconds: int = 0
