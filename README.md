@@ -6,7 +6,7 @@ and serves a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.18.3
+- **Version:** 0.19.0
 
 ## Status
 
@@ -143,41 +143,43 @@ and Node 22.
 Assumptions: Raspberry Pi 5 (4 GB) booted from the 256 GB NVMe SSD kit,
 Raspberry Pi OS Bookworm 64-bit with a graphical session that auto-logs in as
 `transit`, the Waveshare UPS HAT (E) on the pogo-pin connector, and the 5"
-portrait touch display on DSI. The project is installed at `/opt/rmg-watcher`.
+portrait touch display on DSI.
 
 Boot from the SSD with `sudo raspi-config` (6 Advanced Options → A6 Boot Order →
 NVMe) or by setting `BOOT_ORDER=0xf2` with `sudo rpi-eeprom-config --edit`, then
 reboot and confirm the root device is `/dev/nvme0n1p2`.
 
-```bash
-sudo useradd --system --create-home --shell /usr/sbin/nologin transit
-sudo usermod -aG video,render,audio transit
-sudo mkdir -p /opt/rmg-watcher
-sudo chown transit:transit /opt/rmg-watcher
-sudo -u transit git clone <repository-url> /opt/rmg-watcher
-cd /opt/rmg-watcher
+### GitHub release artifact
 
-sudo -u transit python3 -m venv .venv
-sudo -u transit .venv/bin/pip install -e .
-sudo -u transit cp .env.example .env
-sudo chmod 600 .env
-sudo -u transit mkdir -p data/raw data/quarantine
+The GitHub Actions `package-rpi5` job builds the frontend and German stop
+catalog, then uploads `rmg-watcher-rpi5.tar.gz`. On version tags the archive is
+attached to the GitHub release.
+
+On the Pi:
+
+```bash
+sudo mkdir -p /opt/rmg-watcher
+sudo tar -xzf /path/to/rmg-watcher-rpi5.tar.gz -C /opt/rmg-watcher
+sudo bash /opt/rmg-watcher/deploy/scripts/install-rpi5.sh /opt/rmg-watcher
 ```
+
+The install script installs system packages, creates the `transit` user and
+virtual environment, copies the .env template, prepares runtime directories,
+installs the systemd units, and enables the API and pipeline timer. No Node.js
+is needed on the Pi because the frontend is prebuilt.
 
 Set `PIPELINE_MOCK_MODE=false`, `TRANSIT_PROVIDER=transitous`, and a
-`TRANSIT_CONTACT` value in `.env` for live data. Build the frontend either on
-the Pi or on a development machine and copy `frontend/dist`:
+`TRANSIT_CONTACT` value in `/opt/rmg-watcher/.env` for live data. Then restart
+the API:
 
 ```bash
-sudo -u transit sh -c 'cd frontend && npm ci && npm run build'
+sudo systemctl restart rmg-watcher-api.service
 ```
 
-Install and enable the services:
+Enable the kiosk browser only when the display session is ready:
 
 ```bash
-sudo install -m 0644 deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now rmg-watcher-api.service rmg-watcher-pipeline.timer rmg-watcher-kiosk.service
+sudo systemctl enable --now rmg-watcher-kiosk.service
 ```
 
 `start-kiosk.sh` waits for the API and either a Wayland socket or an X display,

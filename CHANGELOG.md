@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-22
+
+### Added
+
+- GitHub Actions packaging job that builds a Raspberry Pi 5 release archive
+  with the frontend, static stop catalog, Python package, and systemd units.
+- `deploy/scripts/install-rpi5.sh` for one-command installation on the Pi.
+- Release job that attaches the Raspberry Pi archive to version tags.
+
 ## [0.18.3] - 2026-11-22
 
 ### Fixed

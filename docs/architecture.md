@@ -126,8 +126,10 @@ Transitous is a community service, so this client is deliberately quiet:
 
 ## Deployment surfaces
 
-- **Bare metal:** install the units from `deploy/systemd/` and build the
-  frontend once with `npm ci && npm run build`. See README.md.
+- **Bare metal:** GitHub Actions packages the built frontend, static stop
+  catalog, Python package, and systemd units into `rmg-watcher-rpi5.tar.gz`.
+  Download it on the Pi and run `deploy/scripts/install-rpi5.sh`. No Node.js is
+  needed on the device. See README.md.
 - **Container:** `docker compose -f deploy/docker-compose.rpi5.yml up -d --build`
   builds a Python 3.12 image with the compiled frontend and runs the API plus a
   looping pipeline worker. The kiosk browser still runs on the host so it can
