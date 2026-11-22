@@ -6,7 +6,7 @@
     QUICK_OFFSET_FIFTEEN_MIN,
     QUICK_OFFSET_ONE_HOUR_MIN,
   } from '../lib/constants'
-  import { formatClockTime, routeLabel } from '../lib/format'
+  import { formatTime, routeLabel } from '../lib/format'
   import type {
     Connection,
     FavouriteConnection,
@@ -456,7 +456,7 @@
         <li class="connection-row">
           <div class="connection-summary">
             <strong>
-              {formatClockTime(connection.departure)} → {formatClockTime(connection.arrival)}
+              {formatTime(connection.departure)} → {formatTime(connection.arrival)}
             </strong>
             <span>
               {connection.duration_minutes} min ·
@@ -488,7 +488,7 @@
                     {leg.to_name}{leg.to_platform ? ` (${leg.to_platform})` : ''}
                   </span>
                   <span class="leg-time">
-                    {formatClockTime(leg.departure)}–{formatClockTime(leg.arrival)}
+                    {formatTime(leg.departure)}–{formatTime(leg.arrival)}
                   </span>
                 </div>
 
@@ -513,7 +513,7 @@
                     <ol class="intermediate">
                       {#each leg.intermediate_stops as stop, stopIndex (stopIndex)}
                         <li>
-                          <span>{formatClockTime(stop.departure ?? stop.arrival ?? '')}</span>
+                          <span>{formatTime(stop.departure ?? stop.arrival ?? '')}</span>
                           <span>{stop.name}</span>
                           {#if stop.platform}
                             <span class="platform">{stop.platform}</span>
@@ -542,7 +542,7 @@
           >
             <div class="card-top">
               <strong>
-                {formatClockTime(connection.departure)} → {formatClockTime(connection.arrival)}
+                {formatTime(connection.departure)} → {formatTime(connection.arrival)}
               </strong>
               <span>
                 {connection.duration_minutes} min ·

@@ -6,17 +6,17 @@ import {
   SECONDS_PER_MINUTE,
 } from './constants'
 
-const clockFormatter = new Intl.DateTimeFormat(undefined, {
+const timeFormatter = new Intl.DateTimeFormat(undefined, {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
 })
 
-export function formatClockTime(value: string | null | undefined): string {
+export function formatTime(value: string | null | undefined): string {
   if (!value) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
-  return clockFormatter.format(date)
+  return timeFormatter.format(date)
 }
 
 export function formatDurationSeconds(seconds: number | null | undefined): string {

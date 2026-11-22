@@ -36,7 +36,7 @@ from rmg_watcher.constants import (
 )
 from rmg_watcher.domain.exceptions import ApiError
 from rmg_watcher.ingestion.retries import RetryPolicy, request_with_retries
-from rmg_watcher.places import stop_name_key
+from rmg_watcher.places import canonical_stop, stop_name_key
 
 CATALOG_TTL_SECONDS = 24 * MINUTES_PER_HOUR * SECONDS_PER_MINUTE
 REQUEST_TIMEOUT_SECONDS = 10.0
@@ -72,14 +72,6 @@ def cached_stop_index(cache_path: Path) -> dict[str, dict[str, Any]]:
         if stop.get("stopId")
     }
 
-
-def _prefer_stop(candidate: dict[str, Any], existing: dict[str, Any]) -> bool:
-    """Prefer parent stop IDs over platform-level IDs."""
-    candidate_id = str(candidate["stopId"])
-    existing_id = str(existing["stopId"])
-    if len(candidate_id) != len(existing_id):
-        return len(candidate_id) < len(existing_id)
-    return candidate_id.count(":") < existing_id.count(":")
 
 
 @lru_cache(maxsize=2)
@@ -172,7 +164,7 @@ class TransitousClient:
                 "max": self._settings.transitous_area_max,
             },
         )
-        stops: dict[tuple[str, float, float], dict[str, Any]] = {}
+        groups: dict[tuple[str, float, float], list[dict[str, Any]]] = {}
         for item in _records(payload):
             stop_id = item.get("stopId")
             name = item.get("name")
@@ -196,11 +188,16 @@ class TransitousClient:
                 round(float(lat), 2),
                 round(float(lon), 2),
             )
-            existing = stops.get(key)
-            if existing is None or _prefer_stop(stop, existing):
-                stops[key] = stop
+            groups.setdefault(key, []).append(stop)
 
-        result = sorted(stops.values(), key=lambda stop: str(stop["name"]))
+        result = sorted(
+            (
+                selected
+                for group in groups.values()
+                if (selected := canonical_stop(group)) is not None
+            ),
+            key=lambda stop: str(stop["name"]),
+        )
         self._write_cache(cache_path, result)
         return result
 

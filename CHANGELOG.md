@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-11-22
+
+### Changed
+
+- Stop searches and nearby lists consolidate obvious name variants such as
+  `Darmstadt Hbf`, `Darmstadt Hauptbahnhof`, and `Darmstadt Central Station`.
+
 ## [0.19.0] - 2026-11-22
 
 ### Added

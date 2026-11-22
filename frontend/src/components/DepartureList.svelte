@@ -2,7 +2,7 @@
   import type { Departure } from '../lib/types'
   import { MILLISECONDS_PER_MINUTE, SECONDS_PER_MINUTE, STATUS_CANCELLED } from '../lib/constants'
   import {
-    formatClockTime,
+    formatTime,
     transportIcon,
     transportLabel,
   } from '../lib/format'
@@ -114,14 +114,14 @@
 
           <span class="departure-main">
             <span class="departure-time">
-              {formatClockTime(departure.expected_time ?? departure.scheduled_time)}
+              {formatTime(departure.expected_time ?? departure.scheduled_time)}
             </span>
             <span class="departure-sub">
               {#if departure.wheelchair_accessible}
                 ♿
               {/if}
               {#if departure.expected_time}
-                scheduled {formatClockTime(departure.scheduled_time)}
+                scheduled {formatTime(departure.scheduled_time)}
               {:else}
                 scheduled
               {/if}

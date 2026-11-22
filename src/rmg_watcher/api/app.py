@@ -49,6 +49,7 @@ from rmg_watcher.ingestion.transitous import (
     load_cached_stops,
 )
 from rmg_watcher.places import (
+    canonical_stop,
     find_stop,
     load_stop_catalog,
     search_stops,
@@ -90,6 +91,24 @@ def _stop_mode(item: dict[str, object]) -> str | None:
     return mode if isinstance(mode, str) else None
 
 
+def _stop_response(
+    item: dict[str, object],
+    distance_m: int | None = None,
+) -> StopResponse:
+    lat, lon = item.get("latitude"), item.get("longitude")
+    if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+        raise ValueError("Stop item is missing coordinates")
+
+    return StopResponse(
+        stop_id=str(item["stopId"]),
+        name=str(item["name"]),
+        latitude=float(lat),
+        longitude=float(lon),
+        distance_m=distance_m,
+        mode=_stop_mode(item),
+    )
+
+
 def _catalog_stops(settings: Settings) -> list[dict[str, object]]:
     return load_cached_stops(settings.transitous_cache_path / STOP_CATALOG_FILE)
 
@@ -124,8 +143,7 @@ def _suggested_stops(
     radius: int,
     limit: int,
 ) -> list[StopResponse]:
-    seen: set[str] = set()
-    result: list[tuple[int, StopResponse]] = []
+    groups: dict[str, list[dict[str, object]]] = {}
     for item in _catalog_stops(settings):
         name = item.get("name")
         lat, lon = item.get("latitude"), item.get("longitude")
@@ -133,26 +151,22 @@ def _suggested_stops(
             continue
         if not isinstance(lon, (int, float)):
             continue
-        key = stop_name_key(name)
-        if key in seen:
+        if distance_meters(latitude, longitude, float(lat), float(lon)) > radius:
             continue
-        distance = distance_meters(latitude, longitude, float(lat), float(lon))
-        if distance > radius:
+        groups.setdefault(stop_name_key(name), []).append(item)
+
+    result: list[tuple[int, StopResponse]] = []
+    for group in groups.values():
+        selected = canonical_stop(group)
+        if selected is None:
             continue
-        seen.add(key)
-        result.append(
-            (
-                distance,
-                StopResponse(
-                    stop_id=str(item["stopId"]),
-                    name=name,
-                    latitude=float(lat),
-                    longitude=float(lon),
-                    distance_m=distance,
-                    mode=_stop_mode(item),
-                ),
-            )
+        distance = distance_meters(
+            latitude,
+            longitude,
+            float(selected["latitude"]),
+            float(selected["longitude"]),
         )
+        result.append((distance, _stop_response(selected, distance)))
     result.sort(key=lambda entry: entry[0])
     return [stop for _, stop in result[:limit]]
 
@@ -188,16 +202,17 @@ def _nearby_stops(
         for stop in repo.list_stops()
     ]
 
-    nearby: list[tuple[int, StopResponse]] = []
-    seen: dict[str, int] = {}
+    current_key = stop_name_key(_stop_name(stop_id, repo, settings))
+    groups: dict[str, list[dict[str, object]]] = {}
     for item in candidates:
-        if item.get("stopId") == stop_id:
-            continue
         lat, lon = item.get("latitude"), item.get("longitude")
         name = item.get("name")
         if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
             continue
         if not isinstance(name, str) or not name:
+            continue
+        name_key = stop_name_key(name)
+        if name_key == current_key:
             continue
         distance = distance_meters(
             location[0],
@@ -207,23 +222,20 @@ def _nearby_stops(
         )
         if distance > settings.transitous_nearby_radius_m:
             continue
-        name_key = stop_name_key(name)
-        if name_key in seen and seen[name_key] <= distance:
+        groups.setdefault(name_key, []).append(item)
+
+    nearby: list[tuple[int, StopResponse]] = []
+    for group in groups.values():
+        selected = canonical_stop(group)
+        if selected is None:
             continue
-        seen[name_key] = distance
-        nearby.append(
-            (
-                distance,
-                StopResponse(
-                    stop_id=str(item["stopId"]),
-                    name=name,
-                    latitude=float(lat),
-                    longitude=float(lon),
-                    distance_m=distance,
-                    mode=_stop_mode(item),
-                ),
-            )
+        distance = distance_meters(
+            location[0],
+            location[1],
+            float(selected["latitude"]),
+            float(selected["longitude"]),
         )
+        nearby.append((distance, _stop_response(selected, distance)))
 
     nearby.sort(key=lambda entry: entry[0])
     return [stop for _, stop in nearby[: settings.transitous_nearby_limit]]
