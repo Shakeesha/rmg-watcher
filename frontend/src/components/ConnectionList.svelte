@@ -157,10 +157,6 @@
     return timeFormatter.format(date)
   }
 
-  function stopName(stopId: string): string {
-    return stops.find((stop) => stop.stop_id === stopId)?.name ?? stopId
-  }
-
   function routeLabel(route: string | null, mode: string): string {
     if (!route) return mode === 'walk' ? 'Walk' : mode.toUpperCase()
     if (!route.includes(':')) return route
@@ -211,13 +207,23 @@
 
   function tightTransferMinutes(connection: Connection): number[] {
     const result: number[] = []
-    for (let index = 0; index < connection.legs.length - 1; index += 1) {
-      const arrival = new Date(connection.legs[index].arrival).getTime()
-      const departure = new Date(connection.legs[index + 1].departure).getTime()
-      if (Number.isNaN(arrival) || Number.isNaN(departure)) continue
-      const minutes = Math.round((departure - arrival) / 60_000)
-      if (minutes >= 0 && minutes <= 5) result.push(minutes)
+    let previous: (typeof connection.legs)[number] | null = null
+
+    for (const leg of connection.legs) {
+      const mode = leg.mode.toLowerCase()
+      if (mode.includes('walk') || mode.includes('foot')) continue
+
+      if (previous !== null) {
+        const arrival = new Date(previous.arrival).getTime()
+        const departure = new Date(leg.departure).getTime()
+        if (!Number.isNaN(arrival) && !Number.isNaN(departure)) {
+          const minutes = Math.round((departure - arrival) / 60_000)
+          if (minutes >= 0 && minutes <= 5) result.push(minutes)
+        }
+      }
+      previous = leg
     }
+
     return result
   }
 
@@ -237,7 +243,11 @@
 
   function save(): void {
     if (!canSearch()) return
-    onSave(fromStop, toStop, `${stopName(fromStop)} → ${stopName(toStop)}`)
+    onSave(
+      fromStop,
+      toStop,
+      `${fromSelectedText || fromStop} → ${toSelectedText || toStop}`,
+    )
   }
 </script>
 
