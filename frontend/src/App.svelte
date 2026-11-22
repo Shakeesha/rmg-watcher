@@ -56,6 +56,7 @@
   let online = $state(true)
 
   let refreshController: AbortController | null = null
+  let suggestController: AbortController | null = null
   let disposed = false
 
   const selectedStopName = $derived(
@@ -131,9 +132,31 @@
     }
   }
 
-  async function refresh(
-    options: { initial?: boolean; lat?: number; lon?: number } = {},
-  ): Promise<void> {
+  async function loadSuggestedStops(lat?: number, lon?: number): Promise<void> {
+    suggestController?.abort()
+    const controller = new AbortController()
+    suggestController = controller
+
+    try {
+      const nextStops = await fetchSuggestedStops(controller.signal, lat, lon)
+      if (controller.signal.aborted || disposed) return
+      stops = nextStops
+      if (
+        selectedPlace === null &&
+        (selectedStopId === null ||
+          !nextStops.some((stop) => stop.stop_id === selectedStopId))
+      ) {
+        selectedStopId = pickDefaultStop(nextStops)
+      }
+    } catch (caught) {
+      if (isAbortError(caught) || disposed) return
+      error = caught instanceof Error ? caught.message : 'Unable to load nearby stops'
+    } finally {
+      if (suggestController === controller) suggestController = null
+    }
+  }
+
+  async function refresh(options: { initial?: boolean } = {}): Promise<void> {
     if (disposed) return
 
     refreshController?.abort()
@@ -143,9 +166,8 @@
 
     try {
       let refreshError: string | null = null
-      const [healthResult, stopsResult, metricsResult] = await Promise.allSettled([
+      const [healthResult, metricsResult] = await Promise.allSettled([
         fetchHealth(controller.signal),
-        fetchSuggestedStops(controller.signal, options.lat, options.lon),
         fetchMetrics(controller.signal),
       ])
 
@@ -155,7 +177,6 @@
         throw healthResult.reason
       }
       health = healthResult.value
-      if (stopsResult.status === 'fulfilled') stops = stopsResult.value
       if (metricsResult.status === 'fulfilled') metrics = metricsResult.value
 
       if (
@@ -261,7 +282,8 @@
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        void refresh({ lat: position.coords.latitude, lon: position.coords.longitude })
+        void loadSuggestedStops(position.coords.latitude, position.coords.longitude)
+        void refresh()
       },
       () => {
         error = 'Location permission denied; showing stops near the configured area'
@@ -320,6 +342,7 @@
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
 
+    void loadSuggestedStops()
     void refresh({ initial: true })
     const timer = window.setInterval(() => {
       if (navigator.onLine) void refresh()
@@ -331,6 +354,7 @@
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
       refreshController?.abort()
+      suggestController?.abort()
       stopNavigation()
     }
   })

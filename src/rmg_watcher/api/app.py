@@ -441,8 +441,12 @@ def create_app(
     def suggested_stops(
         lat: float | None = Query(default=None),
         lon: float | None = Query(default=None),
-        radius: int = Query(default=1500, ge=100, le=10000),
-        limit: int = Query(default=8, ge=1, le=20),
+        radius: int = Query(
+            default=app_settings.transitous_suggested_radius_m, ge=100, le=10000
+        ),
+        limit: int = Query(
+            default=app_settings.transitous_suggested_limit, ge=1, le=20
+        ),
     ) -> list[StopResponse]:
         latitude = lat if lat is not None else app_settings.transitous_home_lat
         longitude = lon if lon is not None else app_settings.transitous_home_lon

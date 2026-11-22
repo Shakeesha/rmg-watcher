@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Transitous ID has resolved.
 - Free multi-word typing in both From and To fields no longer reopens the
   suggestion list after selection.
+- Suggested stops are limited to three and fetched only on initial load or
+  after using **Locate**.
 
 ## [0.16.1] - 2026-11-22
 
