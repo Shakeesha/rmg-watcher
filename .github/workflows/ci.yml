@@ -168,6 +168,9 @@ jobs:
             deploy/systemd/rmg-watcher-pipeline.service \
             deploy/systemd/rmg-watcher-pipeline.timer \
             deploy/systemd/rmg-watcher-kiosk.service \
+            docs/architecture.md \
+            docs/hardware_ui.md \
+            docs/schema.md \
             data/german-stops.json; do
             test -f "$path" || { echo "Missing: $path"; exit 1; }
           done
@@ -210,6 +213,7 @@ jobs:
             src \
             sql \
             deploy \
+            docs \
             frontend/dist \
             frontend/package.json \
             frontend/package-lock.json \
@@ -244,6 +248,7 @@ jobs:
           tar -xzf rmg-watcher-rpi5.tar.gz -C /tmp/rmg-smoke
           test -f /tmp/rmg-smoke/frontend/dist/index.html
           test -f /tmp/rmg-smoke/data/german-stops.json
+          test -f /tmp/rmg-smoke/docs/hardware_ui.md
           test -x /tmp/rmg-smoke/deploy/scripts/install-rpi5.sh
           bash -n /tmp/rmg-smoke/deploy/scripts/*.sh
 

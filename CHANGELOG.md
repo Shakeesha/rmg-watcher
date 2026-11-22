@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-11-23
+
+### Fixed
+
+- The Raspberry Pi release archive and container image now include `docs/`, so
+  the downloaded artifact is sufficient for both the bare-metal installer and a
+  standalone `docker build`. CI checks for the documentation files explicitly.
+- Synchronized `frontend/package-lock.json` with the current package version.
+
+### Added
+
+- `AGENTS.md` as the canonical, persistent process manual covering identity,
+  hardware/runtime constraints, Transitous policy, the `.env` read prohibition,
+  commit/versioning rules, and the verification gate.
+
 ## [0.21.1] - 2026-11-22
 
 ### Fixed

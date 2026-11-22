@@ -15,6 +15,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY sql ./sql
+COPY docs ./docs
 COPY tests/fixtures ./tests/fixtures
 RUN pip install --no-cache-dir -e .
 COPY --from=frontend /frontend/dist ./frontend/dist
