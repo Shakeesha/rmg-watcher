@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.3] - 2026-11-22
+
+### Changed
+
+- Grouped constants into labelled sections in both Python and TypeScript
+  constant files.
+
 ## [0.20.2] - 2026-11-22
 
 ### Changed

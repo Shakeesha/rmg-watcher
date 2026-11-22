@@ -4,7 +4,7 @@ x-app: &app
   build:
     context: ..
     dockerfile: deploy/Dockerfile
-  image: rmg-watcher:0.20.2
+  image: rmg-watcher:0.20.3
   env_file:
     - ../.env
   environment:
