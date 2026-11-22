@@ -42,6 +42,26 @@
   function categoryClass(departure: Departure): string {
     return departure.status === 'cancelled' ? 'cancelled' : departure.delay_category
   }
+
+  function modeIcon(mode: string | null): string {
+    const value = (mode ?? '').toLowerCase()
+    if (value.includes('bus') || value.includes('coach')) return '🚌'
+    if (value.includes('tram') || value.includes('light_rail')) return '🚊'
+    if (value.includes('rail') || value.includes('train')) return '🚆'
+    if (value.includes('subway') || value.includes('metro')) return '🚇'
+    if (value.includes('ferry')) return '⛴️'
+    return '•'
+  }
+
+  function modeLabel(mode: string | null): string {
+    const value = (mode ?? '').toLowerCase()
+    if (value.includes('bus') || value.includes('coach')) return 'Bus'
+    if (value.includes('tram') || value.includes('light_rail')) return 'Tram'
+    if (value.includes('rail') || value.includes('train')) return 'Train'
+    if (value.includes('subway') || value.includes('metro')) return 'Subway'
+    if (value.includes('ferry')) return 'Ferry'
+    return 'Transit'
+  }
 </script>
 
 <section class="departure-list" aria-label="Departures" aria-busy={loading}>
@@ -61,6 +81,15 @@
     <ol class="rows">
       {#each departures as departure (departure.trip_id)}
         <li class="departure-row" class:cancelled={departure.status === 'cancelled'}>
+          <span
+            class="mode-icon"
+            role="img"
+            aria-label={modeLabel(departure.mode)}
+            title={modeLabel(departure.mode)}
+          >
+            {modeIcon(departure.mode)}
+          </span>
+
           <span class="route-badge" aria-label={`Route ${departure.route_short_name}`}>
             {departure.route_short_name}
           </span>
@@ -139,7 +168,7 @@
 
   .departure-row {
     display: grid;
-    grid-template-columns: 64px minmax(0, 1fr) auto auto;
+    grid-template-columns: 30px 64px minmax(0, 1fr) auto auto;
     align-items: center;
     gap: 14px;
     min-height: 66px;
@@ -153,6 +182,13 @@
   .departure-row.cancelled {
     border-left-color: var(--color-danger);
     opacity: 0.82;
+  }
+
+  .mode-icon {
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    line-height: 1;
   }
 
   .route-badge {
@@ -249,7 +285,7 @@
 
   @media (max-width: 560px) {
     .departure-row {
-      grid-template-columns: 56px minmax(0, 1fr) auto;
+      grid-template-columns: 26px 56px minmax(0, 1fr) auto;
       gap: 10px;
     }
 

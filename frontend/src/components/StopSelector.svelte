@@ -10,6 +10,7 @@
     onSelect: (stopId: string) => void
     onToggleNearby: () => void
     onSelectNearby: (stop: NearbyStop) => void
+    onLocate: () => void
   }
 
   let {
@@ -21,6 +22,7 @@
     onSelect,
     onToggleNearby,
     onSelectNearby,
+    onLocate,
   }: Props = $props()
 
   function distanceLabel(metres: number | null): string {
@@ -57,6 +59,10 @@
       onclick={onToggleNearby}
     >
       Nearby
+    </button>
+
+    <button type="button" class="locate-button" data-nav onclick={onLocate} title="Use my location">
+      Locate
     </button>
   </div>
 
@@ -118,7 +124,8 @@
   }
 
   .stop-button,
-  .nearby-toggle {
+  .nearby-toggle,
+  .locate-button {
     flex: 0 0 auto;
     max-width: 320px;
     min-height: 52px;
@@ -149,6 +156,12 @@
   .nearby-toggle.active {
     background: #123247;
     color: #e0f5ff;
+  }
+
+  .locate-button {
+    border-color: #7dd3fc;
+    background: transparent;
+    color: #bde9ff;
   }
 
   .nearby-row {

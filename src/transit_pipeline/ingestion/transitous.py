@@ -213,6 +213,90 @@ class TransitousClient:
         self._write_cache(cache_path, result)
         return result
 
+    def suggested_stops(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_m: int,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Return nearby stops from the cached catalog without an API call."""
+        candidates: list[tuple[int, dict[str, Any]]] = []
+        seen: set[str] = set()
+        for item in self._fetch_catalog():
+            stop_id, name = item.get("stopId"), item.get("name")
+            lat, lon = item.get("latitude"), item.get("longitude")
+            if not isinstance(stop_id, str) or not isinstance(name, str):
+                continue
+            if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+                continue
+            distance = distance_meters(latitude, longitude, float(lat), float(lon))
+            if distance > radius_m:
+                continue
+            key = normalize_stop_name(name)
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(
+                (
+                    distance,
+                    {
+                        "stopId": stop_id,
+                        "name": name,
+                        "latitude": float(lat),
+                        "longitude": float(lon),
+                        "distance_m": distance,
+                    },
+                )
+            )
+        candidates.sort(key=lambda entry: entry[0])
+        return [stop for _, stop in candidates[:limit]]
+
+    def fetch_alerts(self, stop_id: str) -> list[dict[str, Any]]:
+        """Return cached service alerts attached to a stop's next departures."""
+        digest = hashlib.sha256(stop_id.encode("utf-8")).hexdigest()[:20]
+        cache_path = self._cache_dir / "alerts" / f"{digest}.json"
+        cached = self._read_cache(
+            cache_path,
+            self._settings.transitous_min_refresh_seconds,
+        )
+        if cached is not None:
+            return _records(cached)
+
+        payload = self._get(
+            "/v6/stoptimes",
+            params={
+                "stopId": stop_id,
+                "n": 5,
+                "withAlerts": True,
+                "language": "de",
+            },
+        )
+        alerts: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        stop_times = payload.get("stopTimes") if isinstance(payload, dict) else None
+        for stop_time in _records(stop_times):
+            place = stop_time.get("place")
+            if not isinstance(place, dict):
+                continue
+            for alert in _records(place.get("alerts")):
+                header = str(alert.get("headerText") or "")
+                code = str(alert.get("code") or header)
+                if code in seen:
+                    continue
+                seen.add(code)
+                alerts.append(
+                    {
+                        "code": code,
+                        "header": header,
+                        "description": str(alert.get("descriptionText") or ""),
+                        "severity": str(alert.get("severityLevel") or "UNKNOWN"),
+                        "url": alert.get("url") if isinstance(alert.get("url"), str) else None,
+                    }
+                )
+        self._write_cache(cache_path, alerts)
+        return alerts
+
     def search_connections(
         self,
         from_stop: str,
@@ -220,6 +304,7 @@ class TransitousClient:
         *,
         limit: int = 3,
         at: datetime | None = None,
+        arrive_by: bool = False,
     ) -> list[dict[str, Any]]:
         """Search connections, with a 15-minute cache key and a daily request cap."""
         moment = at or self._now()
@@ -228,7 +313,9 @@ class TransitousClient:
             second=0,
             microsecond=0,
         )
-        key_source = f"{from_stop}|{to_stop}|{bucket.isoformat()}"
+        key_source = (
+            f"{from_stop}|{to_stop}|{bucket.isoformat()}|{int(arrive_by)}"
+        )
         digest = hashlib.sha256(key_source.encode("utf-8")).hexdigest()[:20]
         cache_path = self._cache_dir / "connections" / f"{digest}.json"
 
@@ -246,6 +333,7 @@ class TransitousClient:
                 "fromPlace": from_stop,
                 "toPlace": to_stop,
                 "time": moment.isoformat(),
+                "arriveBy": arrive_by,
                 "numItineraries": limit,
                 "maxTransfers": 3,
                 "searchWindow": 1800,

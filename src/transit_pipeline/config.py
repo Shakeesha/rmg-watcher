@@ -12,11 +12,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-DEFAULT_WATCH_STOPS = (
-    "de-DELFI_de:06411:4734",  # Darmstadt Hauptbahnhof
-    "de-amarillo-bw_de:06411:4736",  # Darmstadt Luisenplatz
-    "de-DELFI_de:06432:8563",  # Babenhausen (Hess) Bahnhof
-)
+DEFAULT_WATCH_STOPS = ()
 
 
 def is_pytest_running() -> bool:
@@ -116,6 +112,32 @@ class Settings(BaseSettings):
         ge=1,
         le=20,
         validation_alias="TRANSITOUS_NEARBY_LIMIT",
+    )
+    transitous_home_lat: float = Field(
+        default=49.872881,
+        validation_alias="TRANSITOUS_HOME_LAT",
+    )
+    transitous_home_lon: float = Field(
+        default=8.651252,
+        validation_alias="TRANSITOUS_HOME_LON",
+    )
+    transitous_suggested_radius_m: int = Field(
+        default=1500,
+        ge=100,
+        le=10000,
+        validation_alias="TRANSITOUS_SUGGESTED_RADIUS_M",
+    )
+    transitous_suggested_limit: int = Field(
+        default=8,
+        ge=1,
+        le=20,
+        validation_alias="TRANSITOUS_SUGGESTED_LIMIT",
+    )
+    transitous_alert_stops: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        validation_alias="TRANSITOUS_ALERT_STOPS",
     )
     transitous_cache_path: Path = Field(
         default=PROJECT_ROOT / "data" / "transitous",

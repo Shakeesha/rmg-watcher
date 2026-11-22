@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Connection, Stop } from '../lib/types'
+  import type { Connection, FavouriteConnection, Stop } from '../lib/types'
 
   interface Props {
     stops: Stop[]
@@ -7,7 +7,10 @@
     connections: Connection[]
     loading: boolean
     error: string | null
-    onSearch: (from: string, to: string) => void
+    favourites: FavouriteConnection[]
+    onSearch: (from: string, to: string, time?: string, arriveBy?: boolean) => void
+    onSave: (from: string, to: string, label: string) => void
+    onSelectFavourite: (favourite: FavouriteConnection) => void
   }
 
   let {
@@ -16,11 +19,16 @@
     connections,
     loading,
     error,
+    favourites,
     onSearch,
+    onSave,
+    onSelectFavourite,
   }: Props = $props()
 
   let fromStop = $state('')
   let toStop = $state('')
+  let travelTime = $state('')
+  let arriveBy = $state(false)
 
   $effect(() => {
     if (selectedStopId && !fromStop) fromStop = selectedStopId
@@ -38,6 +46,10 @@
     return timeFormatter.format(date)
   }
 
+  function stopName(stopId: string): string {
+    return stops.find((stop) => stop.stop_id === stopId)?.name ?? stopId
+  }
+
   function routeLabel(route: string | null, mode: string): string {
     if (!route) return mode === 'walk' ? 'Walk' : mode.toUpperCase()
     if (!route.includes(':')) return route
@@ -46,6 +58,16 @@
 
   function canSearch(): boolean {
     return fromStop !== '' && toStop !== '' && fromStop !== toStop
+  }
+
+  function search(): void {
+    if (!canSearch()) return
+    onSearch(fromStop, toStop, travelTime || undefined, arriveBy)
+  }
+
+  function save(): void {
+    if (!canSearch()) return
+    onSave(fromStop, toStop, `${stopName(fromStop)} → ${stopName(toStop)}`)
   }
 </script>
 
@@ -81,16 +103,71 @@
       </select>
     </label>
 
+    <label>
+      <span>Date & time</span>
+      <input type="datetime-local" bind:value={travelTime} data-nav />
+    </label>
+  </div>
+
+  <div class="action-row">
+    <div class="time-mode" role="group" aria-label="Time mode">
+      <button
+        type="button"
+        class:active={!arriveBy}
+        data-nav
+        onclick={() => (arriveBy = false)}
+      >
+        Depart at
+      </button>
+      <button
+        type="button"
+        class:active={arriveBy}
+        data-nav
+        onclick={() => (arriveBy = true)}
+      >
+        Arrive by
+      </button>
+    </div>
+
     <button
       type="button"
       class="search-button"
       data-nav
       disabled={!canSearch() || loading}
-      onclick={() => onSearch(fromStop, toStop)}
+      onclick={search}
     >
       {loading ? 'Searching…' : 'Search'}
     </button>
+
+    <button
+      type="button"
+      class="save-button"
+      data-nav
+      disabled={!canSearch()}
+      onclick={save}
+    >
+      Save
+    </button>
   </div>
+
+  {#if favourites.length > 0}
+    <div class="favourites" role="group" aria-label="Favourite connections">
+      {#each favourites as favourite (favourite.from + favourite.to)}
+        <button
+          type="button"
+          class="favourite"
+          data-nav
+          onclick={() => {
+            fromStop = favourite.from
+            toStop = favourite.to
+            onSelectFavourite(favourite)
+          }}
+        >
+          ★ {favourite.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
 
   {#if error}
     <p class="state error" role="status">{error}</p>
@@ -135,7 +212,7 @@
   .connections {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     height: 100%;
     min-height: 0;
     overflow-y: auto;
@@ -164,12 +241,11 @@
   .count {
     color: var(--color-muted);
     font-size: 0.8rem;
-    font-variant-numeric: tabular-nums;
   }
 
   .search-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr);
     align-items: end;
     gap: 10px;
   }
@@ -189,7 +265,8 @@
     text-transform: uppercase;
   }
 
-  select {
+  select,
+  input {
     width: 100%;
     min-height: 54px;
     padding: 0 10px;
@@ -200,23 +277,71 @@
     font: inherit;
   }
 
-  .search-button {
-    min-width: 120px;
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .time-mode {
+    display: flex;
+    gap: 6px;
+  }
+
+  .time-mode button,
+  .search-button,
+  .save-button {
     min-height: 54px;
-    padding: 0 18px;
-    border: 1px solid var(--color-accent);
+    padding: 0 16px;
+    border: 1px solid #2d3a49;
     border-radius: 10px;
-    background: #123d25;
-    color: #d9ffe7;
-    font-weight: 800;
+    background: #18212b;
+    color: var(--color-text);
+    font-weight: 700;
     cursor: pointer;
   }
 
-  .search-button:disabled {
+  .time-mode button.active {
+    border-color: var(--color-accent);
+    background: #123d25;
+    color: #d9ffe7;
+  }
+
+  .search-button {
+    margin-left: auto;
+    border-color: var(--color-accent);
+    background: #123d25;
+    color: #d9ffe7;
+  }
+
+  .save-button {
+    border-color: #7dd3fc;
+    color: #bde9ff;
+  }
+
+  .search-button:disabled,
+  .save-button:disabled {
     border-color: #2d3a49;
-    background: #18212b;
     color: var(--color-muted);
     cursor: default;
+  }
+
+  .favourites {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .favourite {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid #4a3410;
+    border-radius: 999px;
+    background: #2a1f0d;
+    color: #ffd58a;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
   }
 
   .connection-list {
@@ -312,7 +437,7 @@
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
-    .search-button {
+    .search-row label:last-child {
       grid-column: 1 / -1;
     }
   }

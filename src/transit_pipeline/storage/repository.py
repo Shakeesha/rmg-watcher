@@ -39,6 +39,7 @@ class DepartureView:
     delay_seconds: int | None
     delay_category: str
     status: str
+    mode: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -289,8 +290,9 @@ class TransitRepository:
             rows = connection.execute(
                 """
                 SELECT f.trip_id, f.route_id, r.short_name AS route_short_name,
-                       f.stop_id, s.name AS stop_name, f.scheduled_time,
-                       f.expected_time, f.delay_seconds, f.delay_category, f.status
+                       r.mode AS mode, f.stop_id, s.name AS stop_name,
+                       f.scheduled_time, f.expected_time, f.delay_seconds,
+                       f.delay_category, f.status
                 FROM fact_stop_events AS f
                 JOIN dim_routes AS r ON r.route_id = f.route_id
                 JOIN dim_stops AS s ON s.stop_id = f.stop_id
@@ -316,6 +318,7 @@ class TransitRepository:
                 delay_seconds=row["delay_seconds"],
                 delay_category=row["delay_category"],
                 status=row["status"],
+                mode=row["mode"],
             )
             for row in rows
         ]

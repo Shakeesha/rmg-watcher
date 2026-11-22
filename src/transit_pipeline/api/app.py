@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from transit_pipeline import __version__
 from transit_pipeline.api.schemas import (
+    AlertResponse,
     ConnectionLegResponse,
     ConnectionResponse,
     DepartureResponse,
@@ -76,6 +77,45 @@ def _stop_location(
         if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
             return float(lat), float(lon)
     return None
+
+
+def _suggested_stops(
+    settings: Settings,
+    latitude: float,
+    longitude: float,
+    radius: int,
+    limit: int,
+) -> list[StopResponse]:
+    seen: set[str] = set()
+    result: list[tuple[int, StopResponse]] = []
+    for item in _catalog_stops(settings):
+        name = item.get("name")
+        lat, lon = item.get("latitude"), item.get("longitude")
+        if not isinstance(name, str) or not isinstance(lat, (int, float)):
+            continue
+        if not isinstance(lon, (int, float)):
+            continue
+        key = normalize_stop_name(name)
+        if key in seen:
+            continue
+        distance = distance_meters(latitude, longitude, float(lat), float(lon))
+        if distance > radius:
+            continue
+        seen.add(key)
+        result.append(
+            (
+                distance,
+                StopResponse(
+                    stop_id=str(item["stopId"]),
+                    name=name,
+                    latitude=float(lat),
+                    longitude=float(lon),
+                    distance_m=distance,
+                ),
+            )
+        )
+    result.sort(key=lambda entry: entry[0])
+    return [stop for _, stop in result[:limit]]
 
 
 def _stop_name(stop_id: str, repo: TransitRepository, settings: Settings) -> str:
@@ -188,6 +228,7 @@ def _live_departures(
                 delay_seconds=event.delay_seconds,
                 delay_category=event.delay_category.value,
                 status=event.status.value,
+                mode=record.route_mode,
             )
         )
     return result
@@ -198,13 +239,21 @@ def _connections(
     to_stop: str,
     limit: int,
     settings: Settings,
+    time: datetime | None = None,
+    arrive_by: bool = False,
 ) -> list[ConnectionResponse]:
     if settings.mock_mode or settings.transit_provider != "transitous":
         return []
 
     client = TransitousClient(settings)
     try:
-        itineraries = client.search_connections(from_stop, to_stop, limit=limit)
+        itineraries = client.search_connections(
+            from_stop,
+            to_stop,
+            limit=limit,
+            at=time,
+            arrive_by=arrive_by,
+        )
     finally:
         client.close()
 
@@ -241,6 +290,29 @@ def _connections(
             )
         )
     return result
+
+
+def _alerts(
+    stop_ids: list[str],
+    settings: Settings,
+) -> list[AlertResponse]:
+    if settings.mock_mode or settings.transit_provider != "transitous":
+        return []
+
+    client = TransitousClient(settings)
+    try:
+        result: list[AlertResponse] = []
+        seen: set[str] = set()
+        for stop_id in stop_ids[: settings.transitous_alert_stops]:
+            for alert in client.fetch_alerts(stop_id):
+                key = f"{stop_id}:{alert.get('code')}"
+                if key in seen:
+                    continue
+                seen.add(key)
+                result.append(AlertResponse(stop_id=stop_id, **alert))
+        return result
+    finally:
+        client.close()
 
 
 def create_app(
@@ -302,6 +374,21 @@ def create_app(
         return [StopResponse.model_validate(stop) for stop in repo.list_stops()]
 
     @app.get(
+        "/api/stops/suggested",
+        response_model=list[StopResponse],
+        tags=["stops"],
+    )
+    def suggested_stops(
+        lat: float | None = Query(default=None),
+        lon: float | None = Query(default=None),
+        radius: int = Query(default=1500, ge=100, le=10000),
+        limit: int = Query(default=8, ge=1, le=20),
+    ) -> list[StopResponse]:
+        latitude = lat if lat is not None else app_settings.transitous_home_lat
+        longitude = lon if lon is not None else app_settings.transitous_home_lon
+        return _suggested_stops(app_settings, latitude, longitude, radius, limit)
+
+    @app.get(
         "/api/stops/nearby/{stop_id}",
         response_model=list[StopResponse],
         tags=["stops"],
@@ -347,6 +434,30 @@ def create_app(
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     @app.get(
+        "/api/alerts",
+        response_model=list[AlertResponse],
+        tags=["alerts"],
+    )
+    def alerts(stop_id: str | None = Query(default=None)) -> list[AlertResponse]:
+        if stop_id:
+            stop_ids = [stop_id]
+        else:
+            stop_ids = [
+                stop.stop_id
+                for stop in _suggested_stops(
+                    app_settings,
+                    app_settings.transitous_home_lat,
+                    app_settings.transitous_home_lon,
+                    app_settings.transitous_suggested_radius_m,
+                    app_settings.transitous_suggested_limit,
+                )
+            ]
+        try:
+            return _alerts(stop_ids, app_settings)
+        except ApiError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    @app.get(
         "/api/connections",
         response_model=list[ConnectionResponse],
         tags=["connections"],
@@ -355,11 +466,20 @@ def create_app(
         from_stop: str = Query(alias="from"),
         to_stop: str = Query(alias="to"),
         limit: int = Query(default=3, ge=1, le=5),
+        time: Annotated[datetime | None, Query()] = None,
+        arrive_by: bool = Query(default=False),
     ) -> list[ConnectionResponse]:
         if not from_stop.strip() or not to_stop.strip():
             raise HTTPException(status_code=400, detail="from and to are required")
         try:
-            return _connections(from_stop, to_stop, limit, app_settings)
+            return _connections(
+                from_stop,
+                to_stop,
+                limit,
+                app_settings,
+                time=time,
+                arrive_by=arrive_by,
+            )
         except ApiError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 

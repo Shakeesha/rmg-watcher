@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-22
+
+### Added
+
+- Nearby stops are suggested on open from the cached catalog instead of polling
+  a fixed watchlist; the **Locate** button uses browser geolocation.
+- Transport-mode icons on departure rows.
+- Favourite connections stored in the browser.
+- Date/time picker with departure or arrival selection for connections.
+- Service alerts view using cached MOTIS alerts for nearby stops.
+
+### Changed
+
+- Departure refresh remains at 10 minutes; connection searches stay capped at
+  30 fresh requests per day.
+
 ## [0.11.0] - 2026-11-22
 
 ### Added

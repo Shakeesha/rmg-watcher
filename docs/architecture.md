@@ -90,23 +90,20 @@ Transitous is a community service, so this client is deliberately quiet:
 
 - The Darmstadt-Dieburg/Babenhausen stop catalog is downloaded at most once per
   24 hours and cached under `data/transitous/stops.json`.
-- Departures are cached per watched stop and refreshed at most once every
-  `TRANSITOUS_MIN_REFRESH_SECONDS` (600 seconds / 10 minutes by default).
-- The default watchlist contains three stops: Darmstadt Hbf, Darmstadt
-  Luisenplatz, and Babenhausen (Hess) Bahnhof. That is roughly 432 departure
-  requests per day, below the policy's 720-request threshold.
-- The kiosk has a **Nearby** option: it uses the cached catalog to list stops
-  within `TRANSITOUS_NEARBY_RADIUS_M` and fetches their departures on demand
-  through the same 10-minute cache. Nearby checks are user-initiated and cached,
-  so they do not run on every pipeline tick.
+- No stops are polled by default. `TRANSITOUS_WATCH_STOPS` is empty, so the
+  pipeline does not generate a fixed baseline of departure requests.
+- Departures are fetched on demand from the cached catalog and refreshed at most
+  once every `TRANSITOUS_MIN_REFRESH_SECONDS` (600 seconds / 10 minutes).
+- On open, the UI calls `/api/stops/suggested` and shows nearby stops around
+  `TRANSITOUS_HOME_LAT/LON`, or around the browser position after **Locate**.
+  This is a local catalog lookup with no external request.
 - The **Connections** view uses the resource-heavy `/v6/plan` endpoint. Results
-  are cached for 30 minutes per from/to/time bucket, and a daily counter caps
-  fresh plan requests at `TRANSITOUS_PLAN_LIMIT_PER_DAY` (30 by default).
-- To add permanent stops, add their IDs to `TRANSITOUS_WATCH_STOPS`; keep the
-  list short. The full catalog is available locally for finding IDs, but
-  polling hundreds of stops would violate the usage policy.
-- Route short names from `dim_routes` are used in transfer and delay views, so
-  raw GTFS IDs are never shown to passengers.
+  are cached for 30 minutes per from/to/time/arriveBy bucket, and a daily
+  counter caps fresh plan requests at `TRANSITOUS_PLAN_LIMIT_PER_DAY` (30).
+- **Service alerts** are read from MOTIS stop-time alerts for the nearest stops
+  (`TRANSITOUS_ALERT_STOPS`, default 3) and cached for 10 minutes.
+- Route short names and transport-mode icons are used in the UI, so raw GTFS IDs
+  are never shown to passengers.
 - The UI links to `transitous.org/sources/` and OpenStreetMap attribution.
 
 ## Reliability

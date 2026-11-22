@@ -192,3 +192,67 @@ def test_connections_endpoint_is_empty_in_mock_mode(
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_suggested_stops_are_deduplicated(
+    settings: Settings,
+    repository: TransitRepository,
+    tmp_path: Path,
+) -> None:
+    cache_dir = tmp_path / "transitous"
+    cache_dir.mkdir()
+    (cache_dir / "stops.json").write_text(
+        json.dumps(
+            {
+                "fetched_at": "2026-11-22T00:00:00+00:00",
+                "payload": [
+                    {
+                        "stopId": "near",
+                        "name": "Luisenplatz",
+                        "latitude": 49.873,
+                        "longitude": 8.651,
+                    },
+                    {
+                        "stopId": "near-platform",
+                        "name": "Luisenplatz",
+                        "latitude": 49.8731,
+                        "longitude": 8.6511,
+                    },
+                    {
+                        "stopId": "far",
+                        "name": "Babenhausen Bahnhof",
+                        "latitude": 49.958,
+                        "longitude": 8.957,
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    app = create_app(
+        settings=settings.model_copy(update={"transitous_cache_path": cache_dir}),
+        repository=repository,
+    )
+
+    with TestClient(app) as test_client:
+        response = test_client.get(
+            "/api/stops/suggested?lat=49.872881&lon=8.651252&radius=1500"
+        )
+
+    assert response.status_code == 200
+    stops = response.json()
+    assert [stop["stop_id"] for stop in stops] == ["near"]
+    assert stops[0]["distance_m"] is not None
+
+
+def test_alerts_endpoint_is_empty_in_mock_mode(
+    settings: Settings,
+    repository: TransitRepository,
+) -> None:
+    app = create_app(settings=settings, repository=repository)
+
+    with TestClient(app) as test_client:
+        response = test_client.get("/api/alerts")
+
+    assert response.status_code == 200
+    assert response.json() == []

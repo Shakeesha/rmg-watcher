@@ -1,6 +1,6 @@
 // TypeScript interfaces matching the FastAPI response schemas.
 
-export type View = 'live' | 'delays' | 'transfers' | 'connections'
+export type View = 'live' | 'delays' | 'transfers' | 'connections' | 'alerts'
 
 export interface HealthResponse {
   status: string
@@ -35,6 +35,7 @@ export interface Departure {
   delay_seconds: number | null
   delay_category: string
   status: string
+  mode: string | null
 }
 
 export interface RouteDelay {
@@ -78,4 +79,19 @@ export interface Connection {
   duration_minutes: number
   transfers: number
   legs: ConnectionLeg[]
+}
+
+export interface ServiceAlert {
+  code: string
+  header: string
+  description: string
+  severity: string
+  url: string | null
+  stop_id: string | null
+}
+
+export interface FavouriteConnection {
+  from: string
+  to: string
+  label: string
 }

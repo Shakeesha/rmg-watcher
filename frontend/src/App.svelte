@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import AlertList from './components/AlertList.svelte'
   import ConnectionList from './components/ConnectionList.svelte'
   import DepartureList from './components/DepartureList.svelte'
   import DelayMetricsCard from './components/DelayMetricsCard.svelte'
@@ -8,37 +9,41 @@
   import TopNavBar from './components/TopNavBar.svelte'
   import TransferRiskList from './components/TransferRiskList.svelte'
   import {
+    fetchAlerts,
     fetchConnections,
-    fetchDepartures,
     fetchHealth,
     fetchLiveDepartures,
     fetchMetrics,
     fetchNearbyStops,
-    fetchStops,
+    fetchSuggestedStops,
   } from './lib/api'
+  import { loadFavourites, saveFavourites } from './lib/favourites'
   import { activeView, installNavigation } from './lib/navigation'
   import type {
     Connection,
     Departure,
+    FavouriteConnection,
     HealthResponse,
     Metrics,
     NearbyStop,
-    Stop,
+    ServiceAlert,
   } from './lib/types'
 
   const POLL_INTERVAL_MS = 15_000
   const STOP_STORAGE_KEY = 'transit-kiosk-stop'
 
-  let stops = $state<Stop[]>([])
+  let stops = $state<NearbyStop[]>([])
   let selectedStopId = $state<string | null>(null)
-  let liveStopId = $state<string | null>(null)
-  let liveStopName = $state<string | null>(null)
   let nearbyStops = $state<NearbyStop[]>([])
   let nearbyOpen = $state(false)
   let nearbyLoading = $state(false)
   let connections = $state<Connection[]>([])
   let connectionLoading = $state(false)
   let connectionError = $state<string | null>(null)
+  let favourites = $state<FavouriteConnection[]>([])
+  let alerts = $state<ServiceAlert[]>([])
+  let alertLoading = $state(false)
+  let alertError = $state<string | null>(null)
   let departures = $state<Departure[]>([])
   let metrics = $state<Metrics | null>(null)
   let health = $state<HealthResponse | null>(null)
@@ -51,9 +56,15 @@
   let disposed = false
 
   const selectedStopName = $derived(
-    liveStopId !== null
-      ? (liveStopName ?? 'Nearby stop')
-      : (stops.find((stop) => stop.stop_id === selectedStopId)?.name ?? 'Transit stop'),
+    stops.find((stop) => stop.stop_id === selectedStopId)?.name ??
+      nearbyStops.find((stop) => stop.stop_id === selectedStopId)?.name ??
+      'Transit stop',
+  )
+
+  const stopNames = $derived(
+    new Map(
+      [...stops, ...nearbyStops].map((stop) => [stop.stop_id, stop.name] as const),
+    ),
   )
 
   function isAbortError(caught: unknown): boolean {
@@ -76,19 +87,31 @@
     }
   }
 
-  function pickDefaultStop(nextStops: Stop[]): string | null {
+  function pickDefaultStop(nextStops: NearbyStop[]): string | null {
     if (nextStops.length === 0) return null
     const saved = savedStop()
     if (saved !== null && nextStops.some((stop) => stop.stop_id === saved)) {
       return saved
     }
-    return (
-      nextStops.find((stop) => stop.stop_id === 'luisenplatz')?.stop_id ??
-      nextStops[0].stop_id
-    )
+    return nextStops[0].stop_id
   }
 
-  async function refresh(options: { initial?: boolean } = {}): Promise<void> {
+  async function loadAlerts(controller: AbortController): Promise<void> {
+    alertLoading = true
+    try {
+      alerts = await fetchAlerts(controller.signal)
+      alertError = null
+    } catch (caught) {
+      if (isAbortError(caught) || disposed) return
+      alertError = caught instanceof Error ? caught.message : 'Unable to load service alerts'
+    } finally {
+      alertLoading = false
+    }
+  }
+
+  async function refresh(
+    options: { initial?: boolean; lat?: number; lon?: number } = {},
+  ): Promise<void> {
     if (disposed) return
 
     refreshController?.abort()
@@ -99,7 +122,7 @@
     try {
       const [nextHealth, nextStops, nextMetrics] = await Promise.all([
         fetchHealth(controller.signal),
-        fetchStops(controller.signal),
+        fetchSuggestedStops(controller.signal, options.lat, options.lon),
         fetchMetrics(controller.signal),
       ])
 
@@ -110,20 +133,19 @@
       metrics = nextMetrics
 
       if (
-        liveStopId === null &&
-        (selectedStopId === null ||
-          !nextStops.some((stop) => stop.stop_id === selectedStopId))
+        selectedStopId === null ||
+        !nextStops.some((stop) => stop.stop_id === selectedStopId)
       ) {
         selectedStopId = pickDefaultStop(nextStops)
       }
 
-      if (liveStopId !== null) {
-        departures = await fetchLiveDepartures(liveStopId, controller.signal)
-      } else if (selectedStopId === null) {
+      if (selectedStopId === null) {
         departures = []
       } else {
-        departures = await fetchDepartures(selectedStopId, controller.signal)
+        departures = await fetchLiveDepartures(selectedStopId, controller.signal)
       }
+
+      await loadAlerts(controller)
 
       if (controller.signal.aborted || disposed) return
 
@@ -141,9 +163,7 @@
   }
 
   function selectStop(stopId: string): void {
-    if (stopId === selectedStopId && liveStopId === null) return
-    liveStopId = null
-    liveStopName = null
+    if (stopId === selectedStopId) return
     nearbyOpen = false
     nearbyStops = []
     selectedStopId = stopId
@@ -160,7 +180,7 @@
       return
     }
 
-    const anchor = liveStopId ?? selectedStopId
+    const anchor = selectedStopId
     if (anchor === null) return
 
     nearbyOpen = true
@@ -175,40 +195,33 @@
     }
   }
 
-  async function selectNearbyStop(stop: NearbyStop): Promise<void> {
-    if (stop.stop_id === liveStopId) return
-
-    refreshController?.abort()
-    const controller = new AbortController()
-    refreshController = controller
-
-    liveStopId = stop.stop_id
-    liveStopName = stop.name
-    selectedStopId = stop.stop_id
-    departures = []
-    loading = true
-    error = null
-
-    try {
-      departures = await fetchLiveDepartures(stop.stop_id, controller.signal)
-      lastUpdated = new Date()
-    } catch (caught) {
-      if (isAbortError(caught) || disposed) return
-      error = caught instanceof Error ? caught.message : 'Unable to load nearby departures'
-    } finally {
-      if (refreshController === controller) {
-        refreshController = null
-        loading = false
-      }
+  function locate(): void {
+    if (!navigator.geolocation) {
+      error = 'Geolocation is not available on this device'
+      return
     }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        void refresh({ lat: position.coords.latitude, lon: position.coords.longitude })
+      },
+      () => {
+        error = 'Location permission denied; showing stops near the configured area'
+      },
+      { timeout: 5000, maximumAge: 300_000 },
+    )
   }
 
-  async function searchConnections(from: string, to: string): Promise<void> {
+  async function searchConnections(
+    from: string,
+    to: string,
+    time?: string,
+    arriveBy = false,
+  ): Promise<void> {
     connectionLoading = true
     connectionError = null
     connections = []
     try {
-      connections = await fetchConnections(from, to)
+      connections = await fetchConnections(from, to, undefined, 3, time, arriveBy)
     } catch (caught) {
       connectionError = caught instanceof Error ? caught.message : 'Unable to plan connections'
     } finally {
@@ -216,8 +229,22 @@
     }
   }
 
+  function saveFavourite(from: string, to: string, label: string): void {
+    const next = [
+      ...favourites.filter((item) => item.from !== from || item.to !== to),
+      { from, to, label },
+    ]
+    favourites = next
+    saveFavourites(next)
+  }
+
+  function selectFavourite(favourite: FavouriteConnection): void {
+    void searchConnections(favourite.from, favourite.to)
+  }
+
   onMount(() => {
     online = navigator.onLine
+    favourites = loadFavourites()
 
     const handleOnline = () => {
       online = true
@@ -259,7 +286,8 @@
       {nearbyLoading}
       onSelect={selectStop}
       onToggleNearby={() => void toggleNearby()}
-      onSelectNearby={(stop) => void selectNearbyStop(stop)}
+      onSelectNearby={(stop) => selectStop(stop.stop_id)}
+      onLocate={locate}
     />
   {/if}
 
@@ -271,15 +299,26 @@
     {:else if $activeView === 'delays'}
       <DelayMetricsCard {metrics} {loading} />
     {:else if $activeView === 'transfers'}
-      <TransferRiskList risks={metrics?.transfer_risks ?? []} {stops} {loading} />
-    {:else}
+      <TransferRiskList risks={metrics?.transfer_risks ?? []} stops={[...stops, ...nearbyStops]} {loading} />
+    {:else if $activeView === 'connections'}
       <ConnectionList
-        {stops}
-        selectedStopId={liveStopId ?? selectedStopId}
+        stops={[...stops, ...nearbyStops]}
+        {selectedStopId}
         {connections}
         loading={connectionLoading}
         error={connectionError}
-        onSearch={(from, to) => void searchConnections(from, to)}
+        {favourites}
+        onSearch={(from, to, time, arriveBy) =>
+          void searchConnections(from, to, time, arriveBy)}
+        onSave={saveFavourite}
+        onSelectFavourite={selectFavourite}
+      />
+    {:else}
+      <AlertList
+        {alerts}
+        loading={alertLoading}
+        error={alertError}
+        {stopNames}
       />
     {/if}
   </main>

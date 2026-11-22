@@ -47,6 +47,7 @@ class DepartureResponse(BaseModel):
     delay_seconds: int | None = None
     delay_category: str
     status: str
+    mode: str | None = None
 
 
 class RouteDelayResponse(BaseModel):
@@ -70,6 +71,17 @@ class TransferRiskResponse(BaseModel):
     scheduled_transfer_seconds: int
     projected_slack_seconds: int
     at_risk: bool
+
+
+class AlertResponse(BaseModel):
+    """A service alert affecting a nearby stop."""
+
+    code: str
+    header: str
+    description: str
+    severity: str
+    url: str | None = None
+    stop_id: str | None = None
 
 
 class ConnectionLegResponse(BaseModel):

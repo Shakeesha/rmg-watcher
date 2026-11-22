@@ -6,6 +6,7 @@ import type {
   HealthResponse,
   Metrics,
   NearbyStop,
+  ServiceAlert,
   Stop,
 } from './types'
 
@@ -59,17 +60,39 @@ export function fetchLiveDepartures(
   return getJson<Departure[]>(path, signal)
 }
 
+export function fetchSuggestedStops(
+  signal?: AbortSignal,
+  lat?: number,
+  lon?: number,
+): Promise<NearbyStop[]> {
+  const query = new URLSearchParams()
+  if (lat !== undefined && lon !== undefined) {
+    query.set('lat', String(lat))
+    query.set('lon', String(lon))
+  }
+  const suffix = query.toString()
+  return getJson<NearbyStop[]>(`/stops/suggested${suffix ? `?${suffix}` : ''}`, signal)
+}
+
+export function fetchAlerts(signal?: AbortSignal): Promise<ServiceAlert[]> {
+  return getJson<ServiceAlert[]>('/alerts', signal)
+}
+
 export function fetchConnections(
   fromStop: string,
   toStop: string,
   signal?: AbortSignal,
   limit = 3,
+  time?: string,
+  arriveBy = false,
 ): Promise<Connection[]> {
   const query = new URLSearchParams({
     from: fromStop,
     to: toStop,
     limit: String(limit),
+    arrive_by: String(arriveBy),
   })
+  if (time) query.set('time', time)
   return getJson<Connection[]>(`/connections?${query.toString()}`, signal)
 }
 

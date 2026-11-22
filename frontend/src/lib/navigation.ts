@@ -3,13 +3,20 @@
 import { writable } from 'svelte/store'
 import type { View } from './types'
 
-export const VIEWS: View[] = ['live', 'delays', 'transfers', 'connections']
+export const VIEWS: View[] = [
+  'live',
+  'delays',
+  'transfers',
+  'connections',
+  'alerts',
+]
 
 export const viewLabels: Record<View, string> = {
   live: 'Live',
   delays: 'Delays',
   transfers: 'Transfers',
   connections: 'Connections',
+  alerts: 'Alerts',
 }
 
 export const activeView = writable<View>('live')
