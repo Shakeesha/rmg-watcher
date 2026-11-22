@@ -52,8 +52,18 @@ export function activateFocused(): void {
   }
 }
 
+function isTextEntry(element: Element | null): boolean {
+  if (element === null) return false
+  if (element instanceof HTMLInputElement) return true
+  if (element instanceof HTMLTextAreaElement) return true
+  if (element instanceof HTMLSelectElement) return true
+  return (element as HTMLElement).isContentEditable === true
+}
+
 export function installNavigation(): () => void {
   const handler = (event: KeyboardEvent) => {
+    if (isTextEntry(document.activeElement)) return
+
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowDown':
