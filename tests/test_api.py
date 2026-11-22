@@ -9,11 +9,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from transit_pipeline.api.app import create_app
-from transit_pipeline.config import Settings
-from transit_pipeline.pipeline import run_pipeline
-from transit_pipeline.storage.db import Database
-from transit_pipeline.storage.repository import TransitRepository
+from rmg_watcher.api.app import create_app
+from rmg_watcher.config import Settings
+from rmg_watcher.pipeline import run_pipeline
+from rmg_watcher.storage.db import Database
+from rmg_watcher.storage.repository import TransitRepository
 
 
 @pytest.fixture

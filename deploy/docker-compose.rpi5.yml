@@ -1,10 +1,10 @@
-name: transit-kiosk
+name: rmg-watcher
 
 x-app: &app
   build:
     context: ..
     dockerfile: deploy/Dockerfile
-  image: transit-kiosk:0.16.1
+  image: rmg-watcher:0.16.1
   env_file:
     - ../.env
   environment:
@@ -34,7 +34,7 @@ x-app: &app
 services:
   api:
     <<: *app
-    command: ["python", "-m", "transit_pipeline", "serve"]
+    command: ["rmg-watcher", "serve"]
     ports:
       - "8000:8000"
     mem_limit: 768m
@@ -58,7 +58,7 @@ services:
       - -c
       - |
         while true; do
-          python -m transit_pipeline run || true
+          rmg-watcher run || true
           sleep 60
         done
     depends_on:

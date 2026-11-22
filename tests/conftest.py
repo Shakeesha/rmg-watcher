@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 
-from transit_pipeline.config import Settings
-from transit_pipeline.ingestion.fetcher import MockTransitClient
+from rmg_watcher.config import Settings
+from rmg_watcher.ingestion.fetcher import MockTransitClient
 
 
 @pytest.fixture(autouse=True)

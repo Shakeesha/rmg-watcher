@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import UTC, datetime
 
-from transit_pipeline.domain.models import DelayCategory, DelayEvent, Route, Stop, TripStatus
-from transit_pipeline.transform.validator import ValidDeparture
+from rmg_watcher.domain.models import DelayCategory, DelayEvent, Route, Stop, TripStatus
+from rmg_watcher.transform.validator import ValidDeparture
 
 ON_TIME_THRESHOLD_SECONDS = 60
 MINOR_THRESHOLD_SECONDS = 300

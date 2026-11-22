@@ -11,11 +11,11 @@ from urllib.parse import quote
 
 import httpx
 
-from transit_pipeline import __version__
-from transit_pipeline.config import PROJECT_ROOT, Settings
-from transit_pipeline.domain.exceptions import ApiError
-from transit_pipeline.ingestion.retries import RetryPolicy, request_with_retries
-from transit_pipeline.ingestion.transitous import TransitousClient
+from rmg_watcher import __version__
+from rmg_watcher.config import PROJECT_ROOT, Settings
+from rmg_watcher.domain.exceptions import ApiError
+from rmg_watcher.ingestion.retries import RetryPolicy, request_with_retries
+from rmg_watcher.ingestion.transitous import TransitousClient
 
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
 DEFAULT_TIMEOUT_SECONDS = 10.0

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from transit_pipeline.transform.validator import ValidDeparture
+from rmg_watcher.transform.validator import ValidDeparture
 
 
 def deduplicate_departures(

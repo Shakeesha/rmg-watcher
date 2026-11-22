@@ -9,7 +9,7 @@ from typing import Any
 
 import httpx
 
-from transit_pipeline.domain.exceptions import ApiError
+from rmg_watcher.domain.exceptions import ApiError
 
 RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 

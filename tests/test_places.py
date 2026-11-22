@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from transit_pipeline.places import load_stop_catalog, search_stops
+from rmg_watcher.places import load_stop_catalog, search_stops
 
 
 def test_search_handles_spaces_and_punctuation(tmp_path: Path) -> None:

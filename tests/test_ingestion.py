@@ -10,11 +10,11 @@ import httpx
 import pytest
 import respx
 
-from transit_pipeline.config import Settings
-from transit_pipeline.domain.exceptions import ApiError
-from transit_pipeline.ingestion.fetcher import LiveTransitClient, create_fetcher
-from transit_pipeline.ingestion.raw_store import RawStore
-from transit_pipeline.ingestion.retries import RetryPolicy, request_with_retries
+from rmg_watcher.config import Settings
+from rmg_watcher.domain.exceptions import ApiError
+from rmg_watcher.ingestion.fetcher import LiveTransitClient, create_fetcher
+from rmg_watcher.ingestion.raw_store import RawStore
+from rmg_watcher.ingestion.retries import RetryPolicy, request_with_retries
 
 
 def test_factory_builds_live_client_outside_mock_mode(

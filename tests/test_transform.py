@@ -7,21 +7,21 @@ from typing import Any
 
 import pytest
 
-from transit_pipeline.domain.models import DelayCategory, TripStatus
-from transit_pipeline.ingestion.fetcher import MockTransitClient
-from transit_pipeline.transform.deduplicator import deduplicate_departures
-from transit_pipeline.transform.enricher import (
+from rmg_watcher.domain.models import DelayCategory, TripStatus
+from rmg_watcher.ingestion.fetcher import MockTransitClient
+from rmg_watcher.transform.deduplicator import deduplicate_departures
+from rmg_watcher.transform.enricher import (
     categorize_delay,
     compute_delay_seconds,
     enrich_departures,
 )
-from transit_pipeline.transform.metrics import (
+from rmg_watcher.transform.metrics import (
     assess_transfer_risks,
     percentile,
     punctuality_rate,
     summarize_metrics,
 )
-from transit_pipeline.transform.validator import hash_record, validate_departures
+from rmg_watcher.transform.validator import hash_record, validate_departures
 
 BATCH_ID = "batch-1"
 QUARANTINED_AT = datetime(2026, 11, 21, 8, 30, tzinfo=UTC)

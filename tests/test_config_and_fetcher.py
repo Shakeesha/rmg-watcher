@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from transit_pipeline.config import (
+from rmg_watcher.config import (
     PROJECT_ROOT,
     Settings,
     get_settings,
     is_pytest_running,
 )
-from transit_pipeline.ingestion.fetcher import MockTransitClient, create_fetcher
+from rmg_watcher.ingestion.fetcher import MockTransitClient, create_fetcher
 
 
 def test_pytest_is_detected() -> None:

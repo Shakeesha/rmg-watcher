@@ -1,0 +1,24 @@
+[Unit]
+Description=rmg-watcher kiosk browser
+Documentation=file:///opt/rmg-watcher/README.md
+Wants=rmg-watcher-api.service
+After=network-online.target display-manager.service rmg-watcher-api.service
+ConditionPathExists=/opt/rmg-watcher/frontend/dist/index.html
+
+[Service]
+Type=simple
+User=transit
+Group=transit
+WorkingDirectory=/opt/rmg-watcher
+EnvironmentFile=-/opt/rmg-watcher/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/rmg-watcher/deploy/scripts/start-kiosk.sh
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+KillMode=mixed
+MemoryMax=1536M
+TasksMax=256
+
+[Install]
+WantedBy=graphical.target

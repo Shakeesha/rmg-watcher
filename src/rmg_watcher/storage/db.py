@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from transit_pipeline.config import PROJECT_ROOT
+from rmg_watcher.config import PROJECT_ROOT
 
 DEFAULT_SCHEMA_PATH = PROJECT_ROOT / "sql" / "schema.sql"
 

@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Local stop search now matches multi-word queries with spaces and punctuation,
   including place suffixes such as `(Hessen)`.
+- Renamed the application to `RMG-Watcher` in the UI and `rmg-watcher` in
+  packages, the `rmg-watcher` CLI command, and deployment units.
+- Moved the Python package from `src/transit_pipeline` to `src/rmg_watcher` and
+  removed the old module name entirely.
 
 ## [0.16.0] - 2026-11-22
 
@@ -187,7 +191,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   quarantined counts plus null and foreign-key checks.
 - Pipeline orchestration for the ingest, transform, load, and quality phases.
 - CLI commands: `ingest`, `transform`, `run`, and `quality-check`.
-- `python -m transit_pipeline` entry point.
+- `rmg-watcher` entry point.
 - Analytical SQL queries for punctuality, top delays, and pipeline runs.
 - Storage, quality, CLI, and end-to-end pipeline tests.
 
@@ -247,7 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Environment-backed `Settings` model in `transit_pipeline.config` covering
+- Environment-backed `Settings` model in `rmg_watcher.config` covering
   pipeline paths, live API credentials, and API server options.
 - Automatic mock mode while `PYTEST_CURRENT_TEST` is set, plus an explicit
   `PIPELINE_MOCK_MODE` switch for normal execution.
@@ -261,7 +265,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial project structure for the transit telemetry device.
-- Python package skeleton under `src/transit_pipeline`.
+- Python package skeleton under `src/rmg_watcher`.
 - Svelte 5 + Vite + TypeScript frontend scaffold under `frontend/`.
 - SQL, documentation, deployment, and CI placeholders.
 - Tooling configuration: `pyproject.toml`, `.gitignore`, `.env.example`.

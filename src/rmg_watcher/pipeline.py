@@ -8,20 +8,20 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from transit_pipeline.config import Settings
-from transit_pipeline.domain.models import DelayEvent, Route, Stop
-from transit_pipeline.ingestion.fetcher import TransitFetcher, create_fetcher
-from transit_pipeline.ingestion.raw_store import RawStore
-from transit_pipeline.quality.checks import QualityReport, run_quality_checks
-from transit_pipeline.storage.db import Database
-from transit_pipeline.storage.repository import TransitRepository
-from transit_pipeline.transform.deduplicator import deduplicate_departures
-from transit_pipeline.transform.enricher import (
+from rmg_watcher.config import Settings
+from rmg_watcher.domain.models import DelayEvent, Route, Stop
+from rmg_watcher.ingestion.fetcher import TransitFetcher, create_fetcher
+from rmg_watcher.ingestion.raw_store import RawStore
+from rmg_watcher.quality.checks import QualityReport, run_quality_checks
+from rmg_watcher.storage.db import Database
+from rmg_watcher.storage.repository import TransitRepository
+from rmg_watcher.transform.deduplicator import deduplicate_departures
+from rmg_watcher.transform.enricher import (
     enrich_departures,
     routes_from_departures,
     stops_from_payload,
 )
-from transit_pipeline.transform.validator import (
+from rmg_watcher.transform.validator import (
     QuarantinedRecord,
     ValidDeparture,
     validate_departures,

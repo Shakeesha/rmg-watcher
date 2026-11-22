@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the rmg-watcher pipeline every minute
+Documentation=file:///opt/rmg-watcher/README.md
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=rmg-watcher-pipeline.service
+
+[Install]
+WantedBy=timers.target

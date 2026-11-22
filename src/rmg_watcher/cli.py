@@ -7,17 +7,17 @@ import json
 from collections.abc import Sequence
 from dataclasses import asdict
 
-from transit_pipeline.config import get_settings
-from transit_pipeline.pipeline import ingest, run_pipeline, transform
-from transit_pipeline.quality.checks import run_quality_checks
-from transit_pipeline.storage.db import Database
-from transit_pipeline.storage.repository import TransitRepository
+from rmg_watcher.config import get_settings
+from rmg_watcher.pipeline import ingest, run_pipeline, transform
+from rmg_watcher.quality.checks import run_quality_checks
+from rmg_watcher.storage.db import Database
+from rmg_watcher.storage.repository import TransitRepository
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="transit-pipeline",
-        description="Transit delay telemetry pipeline",
+        prog="rmg-watcher",
+        description="RMG-Watcher transit telemetry pipeline",
     )
     subparsers = parser.add_subparsers(dest="command")
 
@@ -117,7 +117,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         import uvicorn
 
         uvicorn.run(
-            "transit_pipeline.api.app:app",
+            "rmg_watcher.api.app:app",
             host=settings.api_host,
             port=settings.api_port,
             log_level=settings.log_level.lower(),

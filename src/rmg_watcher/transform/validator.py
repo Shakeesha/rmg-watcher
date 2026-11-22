@@ -19,7 +19,7 @@ from pydantic import (
     model_validator,
 )
 
-from transit_pipeline.domain.models import TripStatus
+from rmg_watcher.domain.models import TripStatus
 
 MAX_EARLY_SECONDS = 3_600
 MAX_LATE_SECONDS = 12 * 3_600

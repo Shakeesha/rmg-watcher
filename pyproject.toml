@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "transit-pipeline"
+name = "rmg-watcher"
 dynamic = ["version"]
 description = "RMV/HEAG/DB transit delay telemetry device for Raspberry Pi 5"
 readme = "README.md"
@@ -16,6 +16,9 @@ dependencies = [
     "uvicorn[standard]>=0.32",
 ]
 
+[project.scripts]
+rmg-watcher = "rmg_watcher.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "mypy>=1.13",
@@ -26,10 +29,10 @@ dev = [
 ]
 
 [tool.hatch.version]
-path = "src/transit_pipeline/__init__.py"
+path = "src/rmg_watcher/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/transit_pipeline"]
+packages = ["src/rmg_watcher"]
 
 [tool.ruff]
 line-length = 100

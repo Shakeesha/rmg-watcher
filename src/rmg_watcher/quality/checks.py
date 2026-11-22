@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from transit_pipeline.storage.repository import TransitRepository
+from rmg_watcher.storage.repository import TransitRepository
 
 
 @dataclass(frozen=True, slots=True)

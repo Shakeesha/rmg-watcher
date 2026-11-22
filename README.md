@@ -1,4 +1,4 @@
-# RMG Watcher — Transit Delay Telemetry Device
+# rmg-watcher
 
 Raspberry Pi 5 kiosk that ingests RMV/HEAG/DB transit data, stores it in SQLite,
 and serves a small-screen Svelte UI from a single FastAPI process.
@@ -37,9 +37,12 @@ cd ..
 Run a pipeline batch and serve the UI:
 
 ```bash
-python -m transit_pipeline run
-python -m transit_pipeline serve
+# With the virtual environment active
+rmg-watcher run
+rmg-watcher serve
 ```
+
+On Windows without activating the venv, use `.\.venv\Scripts\rmg-watcher.exe`.
 
 Open <http://127.0.0.1:8000/>. The mock data contains departures for
 `luisenplatz` and `hbf`, including duplicates, malformed rows, and delays.
@@ -71,7 +74,7 @@ mock data:
    TRANSITOUS_NEARBY_LIMIT=8
    ```
 
-3. Run `python -m transit_pipeline run` and serve the UI as above.
+3. Run `rmg-watcher run` and serve the UI as above.
 
 No stops are polled by default. The regional catalog is cached once per day under
 `data/transitous/`, and the UI suggests up to three nearby stops from it. Add
@@ -102,11 +105,11 @@ OpenStreetMap attribution. Consider
 
 | Command | Purpose |
 | --- | --- |
-| `python -m transit_pipeline ingest` | Fetch and snapshot raw payloads. |
-| `python -m transit_pipeline transform` | Validate, deduplicate, and enrich without loading. |
-| `python -m transit_pipeline run` | Full ingest, transform, load, and quality run. |
-| `python -m transit_pipeline quality-check` | Re-run quality gates on the latest run. |
-| `python -m transit_pipeline serve` | Serve the API and built frontend with Uvicorn. |
+| `rmg-watcher ingest` | Fetch and snapshot raw payloads. |
+| `rmg-watcher transform` | Validate, deduplicate, and enrich without loading. |
+| `rmg-watcher run` | Full ingest, transform, load, and quality run. |
+| `rmg-watcher quality-check` | Re-run quality gates on the latest run. |
+| `rmg-watcher serve` | Serve the API and built frontend with Uvicorn. |
 
 ## API
 
@@ -140,7 +143,7 @@ and Node 22.
 Assumptions: Raspberry Pi 5 (4 GB) booted from the 256 GB NVMe SSD kit,
 Raspberry Pi OS Bookworm 64-bit with a graphical session that auto-logs in as
 `transit`, the Waveshare UPS HAT (E) on the pogo-pin connector, and the 5"
-portrait touch display on DSI. The project is installed at `/opt/transit-kiosk`.
+portrait touch display on DSI. The project is installed at `/opt/rmg-watcher`.
 
 Boot from the SSD with `sudo raspi-config` (6 Advanced Options → A6 Boot Order →
 NVMe) or by setting `BOOT_ORDER=0xf2` with `sudo rpi-eeprom-config --edit`, then
@@ -149,10 +152,10 @@ reboot and confirm the root device is `/dev/nvme0n1p2`.
 ```bash
 sudo useradd --system --create-home --shell /usr/sbin/nologin transit
 sudo usermod -aG video,render,audio transit
-sudo mkdir -p /opt/transit-kiosk
-sudo chown transit:transit /opt/transit-kiosk
-sudo -u transit git clone <repository-url> /opt/transit-kiosk
-cd /opt/transit-kiosk
+sudo mkdir -p /opt/rmg-watcher
+sudo chown transit:transit /opt/rmg-watcher
+sudo -u transit git clone <repository-url> /opt/rmg-watcher
+cd /opt/rmg-watcher
 
 sudo -u transit python3 -m venv .venv
 sudo -u transit .venv/bin/pip install -e .
@@ -174,7 +177,7 @@ Install and enable the services:
 ```bash
 sudo install -m 0644 deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now transit-api.service transit-pipeline.timer transit-kiosk.service
+sudo systemctl enable --now rmg-watcher-api.service rmg-watcher-pipeline.timer rmg-watcher-kiosk.service
 ```
 
 `start-kiosk.sh` waits for the API and either a Wayland socket or an X display,
@@ -195,7 +198,7 @@ docker compose -f deploy/docker-compose.rpi5.yml up -d --build
 ## Layout
 
 ```text
-src/transit_pipeline/   Python package (api, domain, ingestion, transform, storage, quality)
+src/rmg_watcher/   Python package (api, domain, ingestion, transform, storage, quality)
 frontend/               Svelte + Vite kiosk UI
 tests/                  pytest suite and fixtures
 sql/                    Schema DDL and analytical queries

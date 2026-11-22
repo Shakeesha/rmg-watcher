@@ -5,7 +5,7 @@
 <header class="top-nav">
   <div class="brand" aria-label="Transit kiosk">
     <span class="brand-mark">RMV</span>
-    <span class="brand-title">Transit live</span>
+    <span class="brand-title">RMG-Watcher</span>
   </div>
 
   <nav class="view-switcher" aria-label="Views">

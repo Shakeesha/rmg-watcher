@@ -8,21 +8,21 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
-from transit_pipeline.domain.models import (
+from rmg_watcher.domain.models import (
     DelayCategory,
     DelayEvent,
     Route,
     Stop,
     TripStatus,
 )
-from transit_pipeline.storage.db import Database
-from transit_pipeline.transform.metrics import (
+from rmg_watcher.storage.db import Database
+from rmg_watcher.transform.metrics import (
     MetricsSummary,
     TransferRisk,
     assess_transfer_risks,
     summarize_metrics,
 )
-from transit_pipeline.transform.validator import QuarantinedRecord
+from rmg_watcher.transform.validator import QuarantinedRecord
 
 
 @dataclass(frozen=True, slots=True)

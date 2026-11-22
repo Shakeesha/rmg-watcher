@@ -5,17 +5,17 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from transit_pipeline.domain.models import (
+from rmg_watcher.domain.models import (
     DelayCategory,
     DelayEvent,
     Route,
     Stop,
     TripStatus,
 )
-from transit_pipeline.quality.checks import run_quality_checks
-from transit_pipeline.storage.db import Database
-from transit_pipeline.storage.repository import TransitRepository
-from transit_pipeline.transform.validator import QuarantinedRecord
+from rmg_watcher.quality.checks import run_quality_checks
+from rmg_watcher.storage.db import Database
+from rmg_watcher.storage.repository import TransitRepository
+from rmg_watcher.transform.validator import QuarantinedRecord
 
 EXPECTED_TABLES = {
     "dim_routes",

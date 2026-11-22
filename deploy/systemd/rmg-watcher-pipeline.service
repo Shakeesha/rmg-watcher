@@ -1,6 +1,6 @@
 [Unit]
-Description=Transit telemetry pipeline run
-Documentation=file:///opt/transit-kiosk/README.md
+Description=rmg-watcher pipeline run
+Documentation=file:///opt/rmg-watcher/README.md
 Wants=network-online.target
 After=network-online.target
 
@@ -8,10 +8,10 @@ After=network-online.target
 Type=oneshot
 User=transit
 Group=transit
-WorkingDirectory=/opt/transit-kiosk
-EnvironmentFile=-/opt/transit-kiosk/.env
+WorkingDirectory=/opt/rmg-watcher
+EnvironmentFile=-/opt/rmg-watcher/.env
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/opt/transit-kiosk/.venv/bin/python -m transit_pipeline run
+ExecStart=/opt/rmg-watcher/.venv/bin/rmg-watcher run
 TimeoutStartSec=180
 Nice=10
 IOSchedulingClass=best-effort
@@ -20,7 +20,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/transit-kiosk/data
+ReadWritePaths=/opt/rmg-watcher/data
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

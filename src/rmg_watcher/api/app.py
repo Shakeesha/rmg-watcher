@@ -13,8 +13,8 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from transit_pipeline import __version__
-from transit_pipeline.api.schemas import (
+from rmg_watcher import __version__
+from rmg_watcher.api.schemas import (
     AlertResponse,
     ConnectionLegResponse,
     ConnectionResponse,
@@ -27,20 +27,20 @@ from transit_pipeline.api.schemas import (
     StopResponse,
     TransferRiskResponse,
 )
-from transit_pipeline.config import Settings, get_settings
-from transit_pipeline.domain.exceptions import ApiError
-from transit_pipeline.ingestion.transitous import (
+from rmg_watcher.config import Settings, get_settings
+from rmg_watcher.domain.exceptions import ApiError
+from rmg_watcher.ingestion.transitous import (
     TransitousClient,
     distance_meters,
     load_cached_stops,
     normalize_stop_name,
 )
-from transit_pipeline.places import find_stop, load_stop_catalog, search_stops
-from transit_pipeline.storage.db import Database
-from transit_pipeline.storage.repository import TransitRepository
-from transit_pipeline.transform.deduplicator import deduplicate_departures
-from transit_pipeline.transform.enricher import enrich_departures
-from transit_pipeline.transform.validator import validate_departures
+from rmg_watcher.places import find_stop, load_stop_catalog, search_stops
+from rmg_watcher.storage.db import Database
+from rmg_watcher.storage.repository import TransitRepository
+from rmg_watcher.transform.deduplicator import deduplicate_departures
+from rmg_watcher.transform.enricher import enrich_departures
+from rmg_watcher.transform.validator import validate_departures
 
 
 def get_repository(request: Request) -> TransitRepository:
@@ -394,7 +394,7 @@ def create_app(
         yield
 
     app = FastAPI(
-        title="Transit Telemetry",
+        title="RMG-Watcher",
         version=__version__,
         lifespan=lifespan,
     )

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from transit_pipeline.domain.exceptions import StorageError
+from rmg_watcher.domain.exceptions import StorageError
 
 
 class RawStore:

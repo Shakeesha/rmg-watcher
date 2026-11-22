@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from transit_pipeline.cli import main
-from transit_pipeline.config import Settings, get_settings
-from transit_pipeline.pipeline import run_pipeline
-from transit_pipeline.storage.db import Database
-from transit_pipeline.storage.repository import TransitRepository
+from rmg_watcher.cli import main
+from rmg_watcher.config import Settings, get_settings
+from rmg_watcher.pipeline import run_pipeline
+from rmg_watcher.storage.db import Database
+from rmg_watcher.storage.repository import TransitRepository
 
 BATCH_ID = "batch-e2e"
 NOW = datetime(2026, 11, 21, 8, 0, tzinfo=UTC)

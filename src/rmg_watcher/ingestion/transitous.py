@@ -21,9 +21,9 @@ from typing import Any, Self
 
 import httpx
 
-from transit_pipeline import __version__
-from transit_pipeline.config import Settings
-from transit_pipeline.domain.exceptions import ApiError
+from rmg_watcher import __version__
+from rmg_watcher.config import Settings
+from rmg_watcher.domain.exceptions import ApiError
 
 CATALOG_TTL_SECONDS = 24 * 60 * 60
 REQUEST_TIMEOUT_SECONDS = 10.0

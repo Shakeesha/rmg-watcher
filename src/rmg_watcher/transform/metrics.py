@@ -7,7 +7,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from transit_pipeline.domain.models import DelayEvent, TripStatus
+from rmg_watcher.domain.models import DelayEvent, TripStatus
 
 PUNCTUALITY_THRESHOLD_SECONDS = 300
 

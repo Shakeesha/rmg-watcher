@@ -10,9 +10,9 @@ import httpx
 import pytest
 import respx
 
-from transit_pipeline.config import Settings
-from transit_pipeline.domain.exceptions import ApiError
-from transit_pipeline.ingestion.transitous import TransitousClient
+from rmg_watcher.config import Settings
+from rmg_watcher.domain.exceptions import ApiError
+from rmg_watcher.ingestion.transitous import TransitousClient
 
 BASE = "https://api.transitous.org/api"
 

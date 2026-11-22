@@ -23,4 +23,4 @@ RUN useradd --create-home --uid 10001 transit \
     && chown -R transit:transit /app/data
 USER transit
 EXPOSE 8000
-CMD ["python", "-m", "transit_pipeline", "serve"]
+CMD ["rmg-watcher", "serve"]

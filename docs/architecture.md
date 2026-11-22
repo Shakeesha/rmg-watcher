@@ -33,9 +33,9 @@ api/app.py  -- /api/health, /api/stops, /api/departures/{stop_id}, /api/metrics
 frontend/dist (Svelte 5 kiosk) -- polls every 15 seconds
 ```
 
-`transit-pipeline.timer` starts one ingest -> transform -> load -> quality run
-every 60 seconds. `transit-api.service` keeps the read API and frontend online.
-`transit-kiosk.service` opens the built UI fullscreen on the attached touch
+`rmg-watcher-pipeline.timer` starts one ingest -> transform -> load -> quality run
+every 60 seconds. `rmg-watcher-api.service` keeps the read API and frontend online.
+`rmg-watcher-kiosk.service` opens the built UI fullscreen on the attached touch
 display and restarts the browser if it exits. There is no GPIO navigation
 service: the display uses the GPIO header for power and the UPS HAT (E) powers
 the Pi through pogo pins.
