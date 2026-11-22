@@ -20,6 +20,10 @@ export interface Stop {
   longitude: number | null
 }
 
+export interface NearbyStop extends Stop {
+  distance_m: number | null
+}
+
 export interface Departure {
   trip_id: string
   route_id: string

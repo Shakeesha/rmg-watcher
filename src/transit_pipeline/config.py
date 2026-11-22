@@ -5,17 +5,17 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_WATCH_STOPS = (
     "de-DELFI_de:06411:4734",  # Darmstadt Hauptbahnhof
     "de-amarillo-bw_de:06411:4736",  # Darmstadt Luisenplatz
-    "de-DELFI_de:06432:8456",  # Dieburg Bahnhof
+    "de-DELFI_de:06432:8563",  # Babenhausen (Hess) Bahnhof
 )
 
 
@@ -71,14 +71,14 @@ class Settings(BaseSettings):
         validation_alias="TRANSIT_CONTACT",
     )
     transitous_area_min: str = Field(
-        default="49.75,8.85",
+        default="49.80,9.00",
         validation_alias="TRANSITOUS_AREA_MIN",
     )
     transitous_area_max: str = Field(
-        default="49.95,8.55",
+        default="50.02,8.55",
         validation_alias="TRANSITOUS_AREA_MAX",
     )
-    transitous_watch_stops: tuple[str, ...] = Field(
+    transitous_watch_stops: Annotated[tuple[str, ...], NoDecode] = Field(
         default=DEFAULT_WATCH_STOPS,
         validation_alias="TRANSITOUS_WATCH_STOPS",
     )
@@ -89,9 +89,21 @@ class Settings(BaseSettings):
         validation_alias="TRANSITOUS_DEPARTURE_LIMIT",
     )
     transitous_min_refresh_seconds: int = Field(
-        default=600,
+        default=420,
         ge=60,
         validation_alias="TRANSITOUS_MIN_REFRESH_SECONDS",
+    )
+    transitous_nearby_radius_m: int = Field(
+        default=1000,
+        ge=50,
+        le=5000,
+        validation_alias="TRANSITOUS_NEARBY_RADIUS_M",
+    )
+    transitous_nearby_limit: int = Field(
+        default=8,
+        ge=1,
+        le=20,
+        validation_alias="TRANSITOUS_NEARBY_LIMIT",
     )
     transitous_cache_path: Path = Field(
         default=PROJECT_ROOT / "data" / "transitous",

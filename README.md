@@ -61,20 +61,26 @@ mock data:
 2. Optionally adjust the area and watchlist:
 
    ```ini
-   TRANSITOUS_AREA_MIN=49.75,8.85
-   TRANSITOUS_AREA_MAX=49.95,8.55
-   TRANSITOUS_WATCH_STOPS=de-DELFI_de:06411:4734,de-amarillo-bw_de:06411:4736,de-DELFI_de:06432:8456
-   TRANSITOUS_MIN_REFRESH_SECONDS=600
+   TRANSITOUS_AREA_MIN=49.80,9.00
+   TRANSITOUS_AREA_MAX=50.02,8.55
+   TRANSITOUS_WATCH_STOPS=de-DELFI_de:06411:4734,de-amarillo-bw_de:06411:4736,de-DELFI_de:06432:8563
+   TRANSITOUS_MIN_REFRESH_SECONDS=420
+   TRANSITOUS_NEARBY_RADIUS_M=1000
+   TRANSITOUS_NEARBY_LIMIT=8
    ```
 
 3. Run `python -m transit_pipeline run` and serve the UI as above.
 
-The default watchlist is Darmstadt Hbf, Darmstadt Luisenplatz, and Dieburg
-Bahnhof. The full regional catalog is cached once per day under
-`data/transitous/`, but only the watched stops are refreshed. Add more stop IDs
-to `TRANSITOUS_WATCH_STOPS` as needed — keep the list short to respect the
-Transitous usage policy. At the default 10-minute refresh interval, three stops
-generate roughly 432 API requests per day.
+The default watchlist is Darmstadt Hbf, Darmstadt Luisenplatz, and Babenhausen
+(Hess) Bahnhof. The full regional catalog is cached once per day under
+`data/transitous/`, but only the watched stops are refreshed automatically.
+Add more stop IDs to `TRANSITOUS_WATCH_STOPS` as needed — keep the list short to
+respect the Transitous usage policy. At the default 7-minute refresh interval,
+three stops generate roughly 617 API requests per day.
+
+In the kiosk UI, press **Nearby** in the stop bar to list stops within 1 km of
+the current stop and check their departures on demand. Those departures use the
+same 7-minute cache, so repeated checks do not create extra requests.
 
 The UI links to [Transitous sources](https://transitous.org/sources/) and
 OpenStreetMap attribution. Consider

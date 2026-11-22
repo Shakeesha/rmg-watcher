@@ -1,6 +1,12 @@
 // Typed fetch client for /api/health, /api/departures, and /api/metrics.
 
-import type { Departure, HealthResponse, Metrics, Stop } from './types'
+import type {
+  Departure,
+  HealthResponse,
+  Metrics,
+  NearbyStop,
+  Stop,
+} from './types'
 
 const API_BASE = '/api'
 
@@ -31,6 +37,24 @@ export function fetchDepartures(
   limit = 20,
 ): Promise<Departure[]> {
   const path = `/departures/${encodeURIComponent(stopId)}?limit=${limit}`
+  return getJson<Departure[]>(path, signal)
+}
+
+export function fetchNearbyStops(
+  stopId: string,
+  signal?: AbortSignal,
+  radius = 1000,
+): Promise<NearbyStop[]> {
+  const path = `/stops/nearby/${encodeURIComponent(stopId)}?radius=${radius}`
+  return getJson<NearbyStop[]>(path, signal)
+}
+
+export function fetchLiveDepartures(
+  stopId: string,
+  signal?: AbortSignal,
+  limit = 20,
+): Promise<Departure[]> {
+  const path = `/departures/live/${encodeURIComponent(stopId)}?limit=${limit}`
   return getJson<Departure[]>(path, signal)
 }
 

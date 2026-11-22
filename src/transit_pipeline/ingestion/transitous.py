@@ -3,13 +3,14 @@
 Transitous is a community service: see https://transitous.org/api/ for its
 usage policy. This client therefore downloads the regional stop catalog at most
 once per day and caches departures for each watched stop for a configurable
-minimum interval (10 minutes by default).
+minimum interval (7 minutes by default).
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +31,30 @@ def _records(value: object) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         raise ApiError("Unexpected Transitous payload shape: expected a list")
     return [item for item in value if isinstance(item, dict)]
+
+
+def distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
+    """Return the great-circle distance between two coordinates in metres."""
+    radius = 6_371_000.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    d_phi = phi2 - phi1
+    d_lambda = math.radians(lon2 - lon1)
+    h = (
+        math.sin(d_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    )
+    return int(2 * radius * math.asin(math.sqrt(h)))
+
+
+def load_cached_stops(cache_path: Path) -> list[dict[str, Any]]:
+    """Read the cached stop catalog without making an API request."""
+    try:
+        document = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(document, dict):
+        return []
+    return _records(document.get("payload"))
 
 
 class TransitousClient:

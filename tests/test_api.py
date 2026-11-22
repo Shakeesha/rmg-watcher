@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -110,3 +111,68 @@ def test_built_frontend_is_served(
         assert test_client.get("/").text == "<html>kiosk</html>"
         assert test_client.get("/assets/app.js").text == "console.log('ok')"
         assert test_client.get("/unknown-route").text == "<html>kiosk</html>"
+
+
+def test_nearby_stops_use_cached_catalog(
+    settings: Settings,
+    repository: TransitRepository,
+    tmp_path: Path,
+) -> None:
+    cache_dir = tmp_path / "transitous"
+    cache_dir.mkdir()
+    (cache_dir / "stops.json").write_text(
+        json.dumps(
+            {
+                "fetched_at": "2026-11-22T00:00:00+00:00",
+                "payload": [
+                    {
+                        "stopId": "luisenplatz",
+                        "name": "Darmstadt Luisenplatz",
+                        "latitude": 49.872881,
+                        "longitude": 8.651252,
+                    },
+                    {
+                        "stopId": "near-stop",
+                        "name": "Luisenplatz Nord",
+                        "latitude": 49.8734,
+                        "longitude": 8.6520,
+                    },
+                    {
+                        "stopId": "far-stop",
+                        "name": "Babenhausen Bahnhof",
+                        "latitude": 49.957962,
+                        "longitude": 8.957182,
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    app = create_app(
+        settings=settings.model_copy(update={"transitous_cache_path": cache_dir}),
+        repository=repository,
+    )
+
+    with TestClient(app) as test_client:
+        response = test_client.get("/api/stops/nearby/luisenplatz?radius=1000")
+
+    assert response.status_code == 200
+    stops = response.json()
+    assert [stop["stop_id"] for stop in stops] == ["near-stop"]
+    assert stops[0]["distance_m"] is not None
+    assert stops[0]["distance_m"] > 0
+
+
+def test_live_departures_endpoint_uses_stored_data_in_mock_mode(
+    settings: Settings,
+    repository: TransitRepository,
+) -> None:
+    app = create_app(settings=settings, repository=repository)
+
+    with TestClient(app) as test_client:
+        response = test_client.get("/api/departures/live/luisenplatz?limit=2")
+
+    assert response.status_code == 200
+    departures = response.json()
+    assert len(departures) == 2
+    assert departures[0]["trip_id"] == "trip-1001"

@@ -22,8 +22,17 @@ from transit_pipeline.api.schemas import (
     TransferRiskResponse,
 )
 from transit_pipeline.config import Settings, get_settings
+from transit_pipeline.domain.exceptions import ApiError
+from transit_pipeline.ingestion.transitous import (
+    TransitousClient,
+    distance_meters,
+    load_cached_stops,
+)
 from transit_pipeline.storage.db import Database
 from transit_pipeline.storage.repository import TransitRepository
+from transit_pipeline.transform.deduplicator import deduplicate_departures
+from transit_pipeline.transform.enricher import enrich_departures
+from transit_pipeline.transform.validator import validate_departures
 
 
 def get_repository(request: Request) -> TransitRepository:
@@ -33,6 +42,137 @@ def get_repository(request: Request) -> TransitRepository:
 
 
 RepositoryDep = Annotated[TransitRepository, Depends(get_repository)]
+
+
+def _catalog_stops(settings: Settings) -> list[dict[str, object]]:
+    return load_cached_stops(settings.transitous_cache_path / "stops.json")
+
+
+def _stop_location(
+    stop_id: str,
+    repo: TransitRepository,
+    settings: Settings,
+) -> tuple[float, float] | None:
+    stop = repo.get_stop(stop_id)
+    if stop is not None and stop.latitude is not None and stop.longitude is not None:
+        return stop.latitude, stop.longitude
+    for item in _catalog_stops(settings):
+        if item.get("stopId") != stop_id:
+            continue
+        lat, lon = item.get("latitude"), item.get("longitude")
+        if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+            return float(lat), float(lon)
+    return None
+
+
+def _stop_name(stop_id: str, repo: TransitRepository, settings: Settings) -> str:
+    stop = repo.get_stop(stop_id)
+    if stop is not None:
+        return stop.name
+    for item in _catalog_stops(settings):
+        if item.get("stopId") == stop_id and isinstance(item.get("name"), str):
+            return str(item["name"])
+    return stop_id
+
+
+def _nearby_stops(
+    stop_id: str,
+    repo: TransitRepository,
+    settings: Settings,
+) -> list[StopResponse]:
+    location = _stop_location(stop_id, repo, settings)
+    if location is None:
+        return []
+
+    candidates: list[dict[str, object]]
+    catalog = _catalog_stops(settings)
+    candidates = catalog if catalog else [
+        {
+            "stopId": stop.stop_id,
+            "name": stop.name,
+            "latitude": stop.latitude,
+            "longitude": stop.longitude,
+        }
+        for stop in repo.list_stops()
+    ]
+
+    nearby: list[tuple[int, StopResponse]] = []
+    for item in candidates:
+        if item.get("stopId") == stop_id:
+            continue
+        lat, lon = item.get("latitude"), item.get("longitude")
+        name = item.get("name")
+        if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+            continue
+        if not isinstance(name, str) or not name:
+            continue
+        distance = distance_meters(
+            location[0],
+            location[1],
+            float(lat),
+            float(lon),
+        )
+        if distance > settings.transitous_nearby_radius_m:
+            continue
+        nearby.append(
+            (
+                distance,
+                StopResponse(
+                    stop_id=str(item["stopId"]),
+                    name=name,
+                    latitude=float(lat),
+                    longitude=float(lon),
+                    distance_m=distance,
+                ),
+            )
+        )
+
+    nearby.sort(key=lambda entry: entry[0])
+    return [stop for _, stop in nearby[: settings.transitous_nearby_limit]]
+
+
+def _live_departures(
+    stop_id: str,
+    limit: int,
+    repo: TransitRepository,
+    settings: Settings,
+) -> list[DepartureResponse]:
+    if settings.mock_mode or settings.transit_provider != "transitous":
+        return [
+            DepartureResponse.model_validate(departure)
+            for departure in repo.list_departures(stop_id, limit=limit)
+        ]
+
+    client = TransitousClient(settings)
+    try:
+        raw = client.fetch_departures(stop_id)
+    finally:
+        client.close()
+
+    validation = validate_departures(raw, batch_id=f"live-{stop_id}")
+    unique, _ = deduplicate_departures(validation.valid)
+    events = enrich_departures(unique)
+    by_trip = {event.trip_id: event for event in events}
+    stop_name = _stop_name(stop_id, repo, settings)
+
+    result: list[DepartureResponse] = []
+    for record in unique[:limit]:
+        event = by_trip[record.trip_id]
+        result.append(
+            DepartureResponse(
+                trip_id=record.trip_id,
+                route_id=record.route_id,
+                route_short_name=record.route_short_name or record.route_id,
+                stop_id=stop_id,
+                stop_name=stop_name,
+                scheduled_time=record.scheduled_time,
+                expected_time=record.expected_time,
+                delay_seconds=event.delay_seconds,
+                delay_category=event.delay_category.value,
+                status=event.status.value,
+            )
+        )
+    return result
 
 
 def create_app(
@@ -94,6 +234,19 @@ def create_app(
         return [StopResponse.model_validate(stop) for stop in repo.list_stops()]
 
     @app.get(
+        "/api/stops/nearby/{stop_id}",
+        response_model=list[StopResponse],
+        tags=["stops"],
+    )
+    def nearby_stops(
+        stop_id: str,
+        repo: RepositoryDep,
+        radius: int = Query(default=1000, ge=50, le=5000),
+    ) -> list[StopResponse]:
+        effective = app_settings.model_copy(update={"transitous_nearby_radius_m": radius})
+        return _nearby_stops(stop_id, repo, effective)
+
+    @app.get(
         "/api/departures/{stop_id}",
         response_model=list[DepartureResponse],
         tags=["departures"],
@@ -109,6 +262,21 @@ def create_app(
             DepartureResponse.model_validate(departure)
             for departure in repo.list_departures(stop_id, limit=limit)
         ]
+
+    @app.get(
+        "/api/departures/live/{stop_id}",
+        response_model=list[DepartureResponse],
+        tags=["departures"],
+    )
+    def live_departures(
+        stop_id: str,
+        repo: RepositoryDep,
+        limit: int = Query(default=20, ge=1, le=100),
+    ) -> list[DepartureResponse]:
+        try:
+            return _live_departures(stop_id, limit, repo, app_settings)
+        except ApiError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     @app.get("/api/metrics", response_model=MetricsResponse, tags=["metrics"])
     def metrics(repo: RepositoryDep) -> MetricsResponse:

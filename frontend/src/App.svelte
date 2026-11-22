@@ -6,15 +6,27 @@
   import StopSelector from './components/StopSelector.svelte'
   import TopNavBar from './components/TopNavBar.svelte'
   import TransferRiskList from './components/TransferRiskList.svelte'
-  import { fetchDepartures, fetchHealth, fetchMetrics, fetchStops } from './lib/api'
+  import {
+    fetchDepartures,
+    fetchHealth,
+    fetchLiveDepartures,
+    fetchMetrics,
+    fetchNearbyStops,
+    fetchStops,
+  } from './lib/api'
   import { activeView, installNavigation } from './lib/navigation'
-  import type { Departure, HealthResponse, Metrics, Stop } from './lib/types'
+  import type { Departure, HealthResponse, Metrics, NearbyStop, Stop } from './lib/types'
 
   const POLL_INTERVAL_MS = 15_000
   const STOP_STORAGE_KEY = 'transit-kiosk-stop'
 
   let stops = $state<Stop[]>([])
   let selectedStopId = $state<string | null>(null)
+  let liveStopId = $state<string | null>(null)
+  let liveStopName = $state<string | null>(null)
+  let nearbyStops = $state<NearbyStop[]>([])
+  let nearbyOpen = $state(false)
+  let nearbyLoading = $state(false)
   let departures = $state<Departure[]>([])
   let metrics = $state<Metrics | null>(null)
   let health = $state<HealthResponse | null>(null)
@@ -27,7 +39,9 @@
   let disposed = false
 
   const selectedStopName = $derived(
-    stops.find((stop) => stop.stop_id === selectedStopId)?.name ?? 'Transit stop',
+    liveStopId !== null
+      ? (liveStopName ?? 'Nearby stop')
+      : (stops.find((stop) => stop.stop_id === selectedStopId)?.name ?? 'Transit stop'),
   )
 
   function isAbortError(caught: unknown): boolean {
@@ -84,13 +98,16 @@
       metrics = nextMetrics
 
       if (
-        selectedStopId === null ||
-        !nextStops.some((stop) => stop.stop_id === selectedStopId)
+        liveStopId === null &&
+        (selectedStopId === null ||
+          !nextStops.some((stop) => stop.stop_id === selectedStopId))
       ) {
         selectedStopId = pickDefaultStop(nextStops)
       }
 
-      if (selectedStopId === null) {
+      if (liveStopId !== null) {
+        departures = await fetchLiveDepartures(liveStopId, controller.signal)
+      } else if (selectedStopId === null) {
         departures = []
       } else {
         departures = await fetchDepartures(selectedStopId, controller.signal)
@@ -112,12 +129,66 @@
   }
 
   function selectStop(stopId: string): void {
-    if (stopId === selectedStopId) return
+    if (stopId === selectedStopId && liveStopId === null) return
+    liveStopId = null
+    liveStopName = null
+    nearbyOpen = false
+    nearbyStops = []
     selectedStopId = stopId
     rememberStop(stopId)
     departures = []
     loading = true
     void refresh()
+  }
+
+  async function toggleNearby(): Promise<void> {
+    if (nearbyOpen) {
+      nearbyOpen = false
+      nearbyStops = []
+      return
+    }
+
+    const anchor = liveStopId ?? selectedStopId
+    if (anchor === null) return
+
+    nearbyOpen = true
+    nearbyLoading = true
+    nearbyStops = []
+    try {
+      nearbyStops = await fetchNearbyStops(anchor)
+    } catch (caught) {
+      error = caught instanceof Error ? caught.message : 'Unable to load nearby stops'
+    } finally {
+      nearbyLoading = false
+    }
+  }
+
+  async function selectNearbyStop(stop: NearbyStop): Promise<void> {
+    if (stop.stop_id === liveStopId) return
+
+    refreshController?.abort()
+    const controller = new AbortController()
+    refreshController = controller
+
+    liveStopId = stop.stop_id
+    liveStopName = stop.name
+    selectedStopId = stop.stop_id
+    departures = []
+    loading = true
+    error = null
+
+    try {
+      departures = await fetchLiveDepartures(stop.stop_id, controller.signal)
+      lastUpdated = new Date()
+    } catch (caught) {
+      if (isAbortError(caught) || disposed) return
+      error = caught instanceof Error ? caught.message : 'Unable to load nearby departures'
+    } finally {
+      if (refreshController === controller) {
+        refreshController = null
+        loading = false
+      }
+    }
   }
 
   onMount(() => {
@@ -155,7 +226,16 @@
   <TopNavBar />
 
   {#if $activeView === 'live'}
-    <StopSelector {stops} {selectedStopId} onSelect={selectStop} />
+    <StopSelector
+      {stops}
+      {selectedStopId}
+      {nearbyStops}
+      {nearbyOpen}
+      {nearbyLoading}
+      onSelect={selectStop}
+      onToggleNearby={() => void toggleNearby()}
+      onSelectNearby={(stop) => void selectNearbyStop(stop)}
+    />
   {/if}
 
   <StatusBanner {health} {error} {online} {lastUpdated} />
