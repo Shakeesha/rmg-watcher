@@ -6,7 +6,7 @@ and serves a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.20.0
+- **Version:** 0.20.1
 
 ## Status
 
@@ -149,6 +149,11 @@ Assumptions: Raspberry Pi 5 (4 GB) booted from the 256 GB NVMe SSD kit,
 Raspberry Pi OS Bookworm 64-bit with a graphical session that auto-logs in as
 `transit`, the Waveshare UPS HAT (E) on the pogo-pin connector, and the 5"
 portrait touch display on DSI.
+
+The package targets the stock Bookworm userland: Python **3.11** is sufficient
+(the supported range is 3.11-3.13), the browser is the distro `chromium`
+package, and there are no Node.js or third-party mapping-library dependencies
+on the device. CI runs the backend suite on both Python 3.11 and 3.12.
 
 Boot from the SSD with `sudo raspi-config` (6 Advanced Options → A6 Boot Order →
 NVMe) or by setting `BOOT_ORDER=0xf2` with `sudo rpi-eeprom-config --edit`, then

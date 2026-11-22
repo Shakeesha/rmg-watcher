@@ -11,6 +11,7 @@ Group=transit
 WorkingDirectory=/opt/rmg-watcher
 EnvironmentFile=-/opt/rmg-watcher/.env
 Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/opt/rmg-watcher/.venv/bin/rmg-watcher run
 TimeoutStartSec=180
 Nice=10

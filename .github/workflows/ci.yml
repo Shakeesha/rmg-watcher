@@ -19,9 +19,14 @@ env:
 
 jobs:
   backend:
-    name: Backend
+    name: Backend (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 is what stock Raspberry Pi OS Bookworm ships.
+        python-version: ["3.11", "3.12"]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,7 +34,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: pyproject.toml
 
@@ -114,6 +119,9 @@ jobs:
             sql \
             deploy \
             frontend/dist \
+            frontend/package.json \
+            frontend/package-lock.json \
+            tests/fixtures \
             data/german-stops.json \
             pyproject.toml \
             README.md \

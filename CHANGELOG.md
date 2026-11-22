@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-11-22
+
+### Fixed
+
+- Target stock Raspberry Pi OS Bookworm: Python 3.11 is now supported, CI checks
+  both 3.11 and 3.12, and the distro `chromium` package is used.
+- Installer adds missing packages, enables user lingering, and no longer risks
+  corrupting files when the archive is extracted into its own install directory.
+- Release archive now includes the frontend manifests and mock fixtures so the
+  Compose build works directly from the downloaded artifact.
+
 ## [0.20.0] - 2026-11-22
 
 ### Added
