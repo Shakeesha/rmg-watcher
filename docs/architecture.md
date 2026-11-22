@@ -120,8 +120,9 @@ Transitous is a community service, so this client is deliberately quiet:
   counts and check nulls and foreign keys. Failures are recorded as
   `quality_failed` in `pipeline_runs`.
 - The status banner reflects offline state, stale data, database health, the
-  last pipeline run, and mock mode. A failed API poll leaves the last known
-  data visible.
+  last pipeline run, mock mode, cancellations, and severe delays. A failed API
+  poll serves the last cached timetable until Transitous returns.
+- Connection warnings include service alerts that affect the journey routes.
 
 ## Deployment surfaces
 

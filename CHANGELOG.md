@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Departure cache now serves stale timetable data when Transitous is offline.
 - Cancellations and severe delays are promoted into the status banner.
 
+### Removed
+
+- `docs/roadmap.md`; all its remaining features are now implemented and
+  documented in the architecture and hardware UI notes.
+
 ## [0.16.2] - 2026-11-22
 
 ### Fixed

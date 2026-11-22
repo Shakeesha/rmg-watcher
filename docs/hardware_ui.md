@@ -11,8 +11,8 @@ so the Pi needs no Node.js runtime after deployment.
 - **Top bar** — product mark and three touch buttons: Live, Delays, Transfers.
 - **Stop selector** — shown only in the Live view; remembers the last selected
   stop in local storage and defaults to `luisenplatz` when available.
-- **Status banner** — connection, stale-data, database, pipeline, and mock-mode
-  state. It refreshes its relative timestamp every 10 seconds.
+- **Status banner** — connection, stale-data, database, pipeline, mock-mode,
+  cancellation, and severe-delay state. It refreshes its relative timestamp every 10 seconds.
 - **Content area** — one view at a time with no page-level scrolling; long
   lists scroll inside the view. The portrait height gives room for several rows.
 
@@ -20,7 +20,7 @@ so the Pi needs no Node.js runtime after deployment.
 
 | View | Content |
 | --- | --- |
-| Live | Search, suggested stops, a local schematic map, transport icons, and a departures/arrivals toggle with delay badges. |
+| Live | Search, suggested stops, a local schematic map, transport icons, accessibility filter, and a departures/arrivals toggle with delay badges. |
 | Delays | Punctuality, median delay, 95th-percentile delay, and the most delayed lines. |
 | Connections | From/To swap, date/time or quick chips, favourites, route bars, tight-transfer warnings, and expandable intermediate stops with platforms. |
 | Alerts | Cached service alerts for nearby stops. |
