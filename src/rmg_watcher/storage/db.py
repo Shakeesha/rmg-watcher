@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from rmg_watcher.config import PROJECT_ROOT
+from rmg_watcher.constants import DB_BUSY_TIMEOUT_MS, DB_TIMEOUT_SECONDS
 
 DEFAULT_SCHEMA_PATH = PROJECT_ROOT / "sql" / "schema.sql"
 
@@ -22,11 +23,11 @@ class Database:
     def connect(self) -> sqlite3.Connection:
         """Open a connection configured for WAL-mode concurrent access."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(self.path, timeout=5.0)
+        connection = sqlite3.connect(self.path, timeout=DB_TIMEOUT_SECONDS)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA journal_mode = WAL")
         connection.execute("PRAGMA foreign_keys = ON")
-        connection.execute("PRAGMA busy_timeout = 5000")
+        connection.execute(f"PRAGMA busy_timeout = {DB_BUSY_TIMEOUT_MS}")
         connection.execute("PRAGMA synchronous = NORMAL")
         return connection
 

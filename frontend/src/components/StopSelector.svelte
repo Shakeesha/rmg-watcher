@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fetchPlaces, resolvePlace } from '../lib/api'
+  import { AUTOCOMPLETE_DEBOUNCE_MS, METRES_PER_KILOMETRE } from '../lib/constants'
   import type { NearbyStop, PlaceResult, Stop } from '../lib/types'
 
   interface Props {
@@ -51,7 +52,7 @@
       } finally {
         searchLoading = false
       }
-    }, 250)
+    }, AUTOCOMPLETE_DEBOUNCE_MS)
     return () => {
       window.clearTimeout(timer)
       searchController?.abort()
@@ -94,8 +95,8 @@
 
   function distanceLabel(metres: number | null): string {
     if (metres === null) return ''
-    if (metres < 1000) return `${metres} m`
-    return `${(metres / 1000).toFixed(1)} km`
+    if (metres < METRES_PER_KILOMETRE) return `${metres} m`
+    return `${(metres / METRES_PER_KILOMETRE).toFixed(1)} km`
   }
 </script>
 

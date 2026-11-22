@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
+from rmg_watcher.constants import DEFAULT_DEPARTURE_LIMIT
 from rmg_watcher.domain.models import (
     DelayCategory,
     DelayEvent,
@@ -285,7 +286,12 @@ class TransitRepository:
             longitude=row["longitude"],
         )
 
-    def list_departures(self, stop_id: str, *, limit: int = 20) -> list[DepartureView]:
+    def list_departures(
+        self,
+        stop_id: str,
+        *,
+        limit: int = DEFAULT_DEPARTURE_LIMIT,
+    ) -> list[DepartureView]:
         with self.database.session() as connection:
             rows = connection.execute(
                 """

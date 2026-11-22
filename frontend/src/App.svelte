@@ -17,6 +17,12 @@
     fetchNearbyStops,
     fetchSuggestedStops,
   } from './lib/api'
+  import {
+    DEFAULT_CONNECTION_LIMIT,
+    DEFAULT_DEPARTURE_LIMIT,
+    GEOLOCATION_MAX_AGE_MS,
+    GEOLOCATION_TIMEOUT_MS,
+  } from './lib/constants'
   import { loadFavourites, saveFavourites } from './lib/favourites'
   import { activeView, installNavigation } from './lib/navigation'
   import type {
@@ -206,7 +212,7 @@
           departures = await fetchLiveDepartures(
             selectedStopId,
             controller.signal,
-            20,
+            DEFAULT_DEPARTURE_LIMIT,
             arriveBy,
           )
         } catch (caught) {
@@ -300,7 +306,7 @@
       () => {
         error = 'Location permission denied; showing stops near the configured area'
       },
-      { timeout: 5000, maximumAge: 300_000 },
+      { timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: GEOLOCATION_MAX_AGE_MS },
     )
   }
 
@@ -314,7 +320,14 @@
     connectionError = null
     connections = []
     try {
-      connections = await fetchConnections(from, to, undefined, 3, time, arriveBy)
+      connections = await fetchConnections(
+        from,
+        to,
+        undefined,
+        DEFAULT_CONNECTION_LIMIT,
+        time,
+        arriveBy,
+      )
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : 'Unable to plan connections'
       connectionError = /API 5\d\d/.test(message)

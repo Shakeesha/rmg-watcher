@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Metrics } from '../lib/types'
+  import { SECONDS_PER_MINUTE } from '../lib/constants'
 
   interface Props {
     metrics: Metrics | null
@@ -22,9 +23,9 @@
   function formatDuration(seconds: number | null | undefined): string {
     if (seconds === null || seconds === undefined) return '—'
     const rounded = Math.round(seconds)
-    if (rounded < 60) return `${rounded}s`
-    const minutes = Math.floor(rounded / 60)
-    const rest = rounded % 60
+    if (rounded < SECONDS_PER_MINUTE) return `${rounded}s`
+    const minutes = Math.floor(rounded / SECONDS_PER_MINUTE)
+    const rest = rounded % SECONDS_PER_MINUTE
     return rest === 0 ? `${minutes}m` : `${minutes}m ${rest}s`
   }
 

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Connection results open as a compact list of route chips; selecting one shows
   the detailed leg view with intermediate stops and platforms.
+- Every `.env` and `.env.example` variable now documents its purpose, allowed
+  values, and default.
+- Magic numbers across the backend and frontend are now named constants.
 
 ## [0.17.3] - 2026-11-22
 

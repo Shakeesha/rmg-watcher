@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Departure } from '../lib/types'
+  import { SECONDS_PER_MINUTE } from '../lib/constants'
 
   interface Props {
     departures: Departure[]
@@ -35,8 +36,10 @@
   function delayText(departure: Departure): string {
     if (departure.status === 'cancelled') return 'Cancelled'
     if (departure.delay_seconds === null) return 'No estimate'
-    if (Math.abs(departure.delay_seconds) <= 60) return 'On time'
-    const minutes = Math.round(Math.abs(departure.delay_seconds) / 60)
+    if (Math.abs(departure.delay_seconds) <= SECONDS_PER_MINUTE) return 'On time'
+    const minutes = Math.round(
+      Math.abs(departure.delay_seconds) / SECONDS_PER_MINUTE,
+    )
     return `${departure.delay_seconds > 0 ? '+' : '−'}${minutes} min`
   }
 

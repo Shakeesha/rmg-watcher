@@ -7,6 +7,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
+from rmg_watcher.constants import DEFAULT_MAX_WAIT_SECONDS, DEFAULT_TOP_K, PERCENT_MAX
 from rmg_watcher.domain.models import DelayEvent, TripStatus
 
 PUNCTUALITY_THRESHOLD_SECONDS = 300
@@ -47,7 +48,7 @@ def percentile(values: Sequence[float], rank: float) -> float | None:
     if len(ordered) == 1:
         return float(ordered[0])
 
-    position = (len(ordered) - 1) * (rank / 100.0)
+    position = (len(ordered) - 1) * (rank / PERCENT_MAX)
     lower = math.floor(position)
     upper = math.ceil(position)
     if lower == upper:
@@ -87,7 +88,7 @@ def delay_values(events: Sequence[DelayEvent]) -> list[float]:
 def top_delayed_routes(
     events: Sequence[DelayEvent],
     *,
-    limit: int = 3,
+    limit: int = DEFAULT_TOP_K,
 ) -> list[tuple[str, int]]:
     """Return the routes with the largest observed delay."""
     worst: dict[str, int] = {}
@@ -101,7 +102,7 @@ def top_delayed_routes(
 def summarize_metrics(
     events: Sequence[DelayEvent],
     *,
-    limit: int = 3,
+    limit: int = DEFAULT_TOP_K,
     threshold_seconds: int = PUNCTUALITY_THRESHOLD_SECONDS,
 ) -> MetricsSummary:
     """Compute the metrics summary shown by the kiosk UI."""
@@ -119,7 +120,7 @@ def assess_transfer_risks(
     events: Sequence[DelayEvent],
     *,
     min_transfer_seconds: int = 180,
-    max_wait_seconds: int = 900,
+    max_wait_seconds: int = DEFAULT_MAX_WAIT_SECONDS,
 ) -> list[TransferRisk]:
     """Pair inbound and outbound trips at each stop and score their slack."""
     by_stop: dict[str, list[DelayEvent]] = {}

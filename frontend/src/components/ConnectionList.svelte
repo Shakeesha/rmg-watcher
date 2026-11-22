@@ -1,5 +1,10 @@
 <script lang="ts">
   import { fetchPlaces, resolvePlace } from '../lib/api'
+  import {
+    AUTOCOMPLETE_DEBOUNCE_MS,
+    QUICK_OFFSET_FIFTEEN_MIN,
+    QUICK_OFFSET_ONE_HOUR_MIN,
+  } from '../lib/constants'
   import type {
     Connection,
     FavouriteConnection,
@@ -80,7 +85,7 @@
       } finally {
         fromLoading = false
       }
-    }, 250)
+    }, AUTOCOMPLETE_DEBOUNCE_MS)
     return () => {
       window.clearTimeout(timer)
       fromController?.abort()
@@ -105,7 +110,7 @@
       } finally {
         toLoading = false
       }
-    }, 250)
+    }, AUTOCOMPLETE_DEBOUNCE_MS)
     return () => {
       window.clearTimeout(timer)
       toController?.abort()
@@ -399,10 +404,26 @@
 
   <div class="quick-times" role="group" aria-label="Quick time selection">
     <button type="button" data-nav onclick={() => setOffset(0)}>Now</button>
-    <button type="button" data-nav onclick={() => setOffset(15)}>in 15 min</button>
-    <button type="button" data-nav onclick={() => setOffset(60)}>in 1 h</button>
-    <button type="button" data-nav onclick={() => shiftTime(-15)}>Earlier</button>
-    <button type="button" data-nav onclick={() => shiftTime(15)}>Later</button>
+    <button type="button" data-nav onclick={() => setOffset(QUICK_OFFSET_FIFTEEN_MIN)}>
+      in 15 min
+    </button>
+    <button type="button" data-nav onclick={() => setOffset(QUICK_OFFSET_ONE_HOUR_MIN)}>
+      in 1 h
+    </button>
+    <button
+      type="button"
+      data-nav
+      onclick={() => shiftTime(-QUICK_OFFSET_FIFTEEN_MIN)}
+    >
+      Earlier
+    </button>
+    <button
+      type="button"
+      data-nav
+      onclick={() => shiftTime(QUICK_OFFSET_FIFTEEN_MIN)}
+    >
+      Later
+    </button>
   </div>
 
   {#if favourites.length > 0}

@@ -23,9 +23,19 @@ import httpx
 
 from rmg_watcher import __version__
 from rmg_watcher.config import Settings
+from rmg_watcher.constants import (
+    CACHE_BUCKET_MINUTES,
+    DEFAULT_ALERT_STOP_TIMES,
+    DEFAULT_CONNECTION_LIMIT,
+    DEFAULT_MAX_TRANSFERS,
+    DEFAULT_SEARCH_WINDOW_SECONDS,
+    DIGEST_LENGTH,
+    MINUTES_PER_HOUR,
+    SECONDS_PER_MINUTE,
+)
 from rmg_watcher.domain.exceptions import ApiError
 
-CATALOG_TTL_SECONDS = 24 * 60 * 60
+CATALOG_TTL_SECONDS = 24 * MINUTES_PER_HOUR * SECONDS_PER_MINUTE
 REQUEST_TIMEOUT_SECONDS = 10.0
 RETRY_STATUSES = {429, 500, 502, 503, 504}
 
@@ -188,7 +198,7 @@ class TransitousClient:
         """Return cached or freshly fetched departure/arrival records for one stop."""
         digest = hashlib.sha256(
             f"{stop_id}|{int(arrive_by)}".encode()
-        ).hexdigest()[:20]
+        ).hexdigest()[:DIGEST_LENGTH]
         cache_path = self._cache_dir / "departures" / f"{digest}.json"
         cached = self._read_cache(
             cache_path,
@@ -265,7 +275,7 @@ class TransitousClient:
 
     def fetch_alerts(self, stop_id: str) -> list[dict[str, Any]]:
         """Return cached service alerts attached to a stop's next departures."""
-        digest = hashlib.sha256(stop_id.encode("utf-8")).hexdigest()[:20]
+        digest = hashlib.sha256(stop_id.encode("utf-8")).hexdigest()[:DIGEST_LENGTH]
         cache_path = self._cache_dir / "alerts" / f"{digest}.json"
         cached = self._read_cache(
             cache_path,
@@ -278,7 +288,7 @@ class TransitousClient:
             "/v6/stoptimes",
             params={
                 "stopId": stop_id,
-                "n": 5,
+                "n": DEFAULT_ALERT_STOP_TIMES,
                 "withAlerts": True,
                 "language": "de",
             },
@@ -328,7 +338,7 @@ class TransitousClient:
         bias_key = "" if bias is None else f"{bias[0]:.4f},{bias[1]:.4f}"
         digest = hashlib.sha256(
             f"{query.casefold()}|{count}|{bias_key}".encode()
-        ).hexdigest()[:20]
+        ).hexdigest()[:DIGEST_LENGTH]
         cache_path = self._cache_dir / "geocode" / f"{digest}.json"
         cached = self._read_cache(cache_path, CATALOG_TTL_SECONDS)
         if cached is not None:
@@ -375,26 +385,26 @@ class TransitousClient:
         from_stop: str,
         to_stop: str,
         *,
-        limit: int = 3,
+        limit: int = DEFAULT_CONNECTION_LIMIT,
         at: datetime | None = None,
         arrive_by: bool = False,
     ) -> list[dict[str, Any]]:
-        """Search connections, with a 15-minute cache key and a daily request cap."""
+        """Search connections, with a bucketed cache key and a daily request cap."""
         moment = at or self._now()
         bucket = moment.replace(
-            minute=moment.minute - moment.minute % 15,
+            minute=moment.minute - moment.minute % CACHE_BUCKET_MINUTES,
             second=0,
             microsecond=0,
         )
         key_source = (
             f"{from_stop}|{to_stop}|{bucket.isoformat()}|{int(arrive_by)}"
         )
-        digest = hashlib.sha256(key_source.encode("utf-8")).hexdigest()[:20]
+        digest = hashlib.sha256(key_source.encode("utf-8")).hexdigest()[:DIGEST_LENGTH]
         cache_path = self._cache_dir / "connections" / f"{digest}.json"
 
         cached = self._read_cache(
             cache_path,
-            self._settings.transitous_plan_cache_minutes * 60,
+            self._settings.transitous_plan_cache_minutes * SECONDS_PER_MINUTE,
         )
         if cached is not None:
             return _records(cached)
@@ -408,8 +418,8 @@ class TransitousClient:
                 "time": moment.isoformat(),
                 "arriveBy": arrive_by,
                 "numItineraries": limit,
-                "maxTransfers": 3,
-                "searchWindow": 1800,
+                "maxTransfers": DEFAULT_MAX_TRANSFERS,
+                "searchWindow": DEFAULT_SEARCH_WINDOW_SECONDS,
                 "detailedLegs": False,
                 "withFares": False,
                 "realtimeMode": "REALTIME",

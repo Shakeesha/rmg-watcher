@@ -10,6 +10,11 @@ import type {
   ServiceAlert,
   Stop,
 } from './types'
+import {
+  DEFAULT_CONNECTION_LIMIT,
+  DEFAULT_DEPARTURE_LIMIT,
+  DEFAULT_NEARBY_RADIUS_M,
+} from './constants'
 
 const API_BASE = '/api'
 
@@ -37,7 +42,7 @@ export function fetchStops(signal?: AbortSignal): Promise<Stop[]> {
 export function fetchDepartures(
   stopId: string,
   signal?: AbortSignal,
-  limit = 20,
+  limit = DEFAULT_DEPARTURE_LIMIT,
 ): Promise<Departure[]> {
   const path = `/departures/${encodeURIComponent(stopId)}?limit=${limit}`
   return getJson<Departure[]>(path, signal)
@@ -46,7 +51,7 @@ export function fetchDepartures(
 export function fetchNearbyStops(
   stopId: string,
   signal?: AbortSignal,
-  radius = 1000,
+  radius = DEFAULT_NEARBY_RADIUS_M,
 ): Promise<NearbyStop[]> {
   const path = `/stops/nearby/${encodeURIComponent(stopId)}?radius=${radius}`
   return getJson<NearbyStop[]>(path, signal)
@@ -55,7 +60,7 @@ export function fetchNearbyStops(
 export function fetchLiveDepartures(
   stopId: string,
   signal?: AbortSignal,
-  limit = 20,
+  limit = DEFAULT_DEPARTURE_LIMIT,
   arriveBy = false,
 ): Promise<Departure[]> {
   const path = `/departures/live/${encodeURIComponent(stopId)}?limit=${limit}&arrive_by=${arriveBy}`
@@ -101,7 +106,7 @@ export function fetchConnections(
   fromStop: string,
   toStop: string,
   signal?: AbortSignal,
-  limit = 3,
+  limit = DEFAULT_CONNECTION_LIMIT,
   time?: string,
   arriveBy = false,
 ): Promise<Connection[]> {

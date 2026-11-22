@@ -1,5 +1,15 @@
 <script lang="ts">
   import type { NearbyStop } from '../lib/types'
+  import {
+    MAP_BASELINE_Y,
+    MAP_MARGIN_X,
+    MAP_PLOT_SIZE,
+    MAP_RIGHT_X,
+    MAP_TOP_Y,
+    MAP_VIEWBOX_SIZE,
+    MAX_MAP_STOPS,
+    MIN_COORD_SPAN,
+  } from '../lib/constants'
 
   interface Props {
     stops: NearbyStop[]
@@ -19,43 +29,43 @@
     ),
   )
 
-  const mapped = $derived.by(() => {
-    if (located.length === 0 || center === null) return []
+  const bounds = $derived.by(() => {
+    if (located.length === 0 || center === null) return null
     const lats = [center.latitude, ...located.map((stop) => stop.latitude)]
     const lons = [center.longitude, ...located.map((stop) => stop.longitude)]
     const minLat = Math.min(...lats)
     const maxLat = Math.max(...lats)
     const minLon = Math.min(...lons)
     const maxLon = Math.max(...lons)
-    const latSpan = Math.max(maxLat - minLat, 0.0005)
-    const lonSpan = Math.max(maxLon - minLon, 0.0005)
-
-    const project = (lat: number, lon: number) => ({
-      x: 30 + ((lon - minLon) / lonSpan) * 260,
-      y: 290 - ((lat - minLat) / latSpan) * 260,
-    })
-
-    return located.slice(0, 12).map((stop) => ({
-      stop,
-      ...project(stop.latitude, stop.longitude),
-    }))
-  })
-
-  const centerPoint = $derived.by(() => {
-    if (center === null || located.length === 0) return null
-    const lats = [center.latitude, ...located.map((stop) => stop.latitude)]
-    const lons = [center.longitude, ...located.map((stop) => stop.longitude)]
-    const minLat = Math.min(...lats)
-    const maxLat = Math.max(...lats)
-    const minLon = Math.min(...lons)
-    const maxLon = Math.max(...lons)
-    const latSpan = Math.max(maxLat - minLat, 0.0005)
-    const lonSpan = Math.max(maxLon - minLon, 0.0005)
     return {
-      x: 30 + ((center.longitude - minLon) / lonSpan) * 260,
-      y: 290 - ((center.latitude - minLat) / latSpan) * 260,
+      minLat,
+      minLon,
+      latSpan: Math.max(maxLat - minLat, MIN_COORD_SPAN),
+      lonSpan: Math.max(maxLon - minLon, MIN_COORD_SPAN),
     }
   })
+
+  function project(lat: number, lon: number): { x: number; y: number } | null {
+    if (bounds === null) return null
+    return {
+      x: MAP_MARGIN_X + ((lon - bounds.minLon) / bounds.lonSpan) * MAP_PLOT_SIZE,
+      y: MAP_BASELINE_Y - ((lat - bounds.minLat) / bounds.latSpan) * MAP_PLOT_SIZE,
+    }
+  }
+
+  const mapped = $derived(
+    located
+      .slice(0, MAX_MAP_STOPS)
+      .map((stop) => ({ stop, point: project(stop.latitude, stop.longitude) }))
+      .filter(
+        (item): item is { stop: LocatedStop; point: { x: number; y: number } } =>
+          item.point !== null,
+      ),
+  )
+
+  const centerPoint = $derived(
+    center === null ? null : project(center.latitude, center.longitude),
+  )
 
   function modeIcon(mode: string | null): string {
     const value = (mode ?? '').toLowerCase()
@@ -71,31 +81,57 @@
 </script>
 
 <section class="nearby-map" aria-label="Nearby stop map">
-  <svg viewBox="0 0 320 320" role="img" aria-label="Positions of nearby stops">
-    <line x1="30" y1="290" x2="290" y2="290" class="axis" />
-    <line x1="30" y1="30" x2="30" y2="290" class="axis" />
+  <svg
+    viewBox={`0 0 ${MAP_VIEWBOX_SIZE} ${MAP_VIEWBOX_SIZE}`}
+    role="img"
+    aria-label="Positions of nearby stops"
+  >
+    <line
+      x1={MAP_MARGIN_X}
+      y1={MAP_BASELINE_Y}
+      x2={MAP_RIGHT_X}
+      y2={MAP_BASELINE_Y}
+      class="axis"
+    />
+    <line
+      x1={MAP_MARGIN_X}
+      y1={MAP_TOP_Y}
+      x2={MAP_MARGIN_X}
+      y2={MAP_BASELINE_Y}
+      class="axis"
+    />
 
     {#if centerPoint}
       <circle cx={centerPoint.x} cy={centerPoint.y} r="7" class="center-marker" />
     {/if}
 
-    {#each mapped as point (point.stop.stop_id)}
+    {#each mapped as item (item.stop.stop_id)}
       <g
-        class:selected={selectedStopId === point.stop.stop_id}
+        class:selected={selectedStopId === item.stop.stop_id}
         role="button"
         tabindex="0"
-        aria-label={`${point.stop.name}, ${point.stop.distance_m ?? 0} metres away`}
-        onclick={() => activate(point.stop)}
+        aria-label={`${item.stop.name}, ${item.stop.distance_m ?? 0} metres away`}
+        onclick={() => activate(item.stop)}
         onkeydown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') activate(point.stop)
+          if (event.key === 'Enter' || event.key === ' ') activate(item.stop)
         }}
       >
-        <circle cx={point.x} cy={point.y} r="16" class="stop-marker" />
-        <text x={point.x} y={point.y + 6} class="stop-icon" text-anchor="middle">
-          {modeIcon(point.stop.mode)}
+        <circle cx={item.point.x} cy={item.point.y} r="16" class="stop-marker" />
+        <text
+          x={item.point.x}
+          y={item.point.y + 6}
+          class="stop-icon"
+          text-anchor="middle"
+        >
+          {modeIcon(item.stop.mode)}
         </text>
-        <text x={point.x} y={point.y - 24} class="stop-label" text-anchor="middle">
-          {point.stop.name.split(',')[0]}
+        <text
+          x={item.point.x}
+          y={item.point.y - 24}
+          class="stop-label"
+          text-anchor="middle"
+        >
+          {item.stop.name.split(',')[0]}
         </text>
       </g>
     {/each}

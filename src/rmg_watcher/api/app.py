@@ -28,6 +28,18 @@ from rmg_watcher.api.schemas import (
     TransferRiskResponse,
 )
 from rmg_watcher.config import Settings, get_settings
+from rmg_watcher.constants import (
+    DEFAULT_CONNECTION_LIMIT,
+    DEFAULT_DEPARTURE_LIMIT,
+    MAX_CONNECTIONS_PER_SEARCH,
+    MAX_DEPARTURE_LIMIT,
+    MAX_NEARBY_RADIUS_M,
+    MAX_SUGGESTED_LIMIT,
+    MAX_SUGGESTED_RADIUS_M,
+    MIN_NEARBY_RADIUS_M,
+    MIN_SUGGESTED_RADIUS_M,
+    SECONDS_PER_MINUTE,
+)
 from rmg_watcher.domain.exceptions import ApiError
 from rmg_watcher.ingestion.transitous import (
     TransitousClient,
@@ -345,7 +357,7 @@ def _connections(
             ConnectionResponse(
                 departure=_as_datetime(itinerary.get("startTime")),
                 arrival=_as_datetime(itinerary.get("endTime")),
-                duration_minutes=int(itinerary.get("duration") or 0) // 60,
+                duration_minutes=int(itinerary.get("duration") or 0) // SECONDS_PER_MINUTE,
                 transfers=int(itinerary.get("transfers") or 0),
                 legs=legs,
             )
@@ -448,10 +460,14 @@ def create_app(
         lat: float | None = Query(default=None),
         lon: float | None = Query(default=None),
         radius: int = Query(
-            default=app_settings.transitous_suggested_radius_m, ge=100, le=10000
+            default=app_settings.transitous_suggested_radius_m,
+            ge=MIN_SUGGESTED_RADIUS_M,
+            le=MAX_SUGGESTED_RADIUS_M,
         ),
         limit: int = Query(
-            default=app_settings.transitous_suggested_limit, ge=1, le=20
+            default=app_settings.transitous_suggested_limit,
+            ge=1,
+            le=MAX_SUGGESTED_LIMIT,
         ),
     ) -> list[StopResponse]:
         latitude = lat if lat is not None else app_settings.transitous_home_lat
@@ -511,7 +527,11 @@ def create_app(
     def nearby_stops(
         stop_id: str,
         repo: RepositoryDep,
-        radius: int = Query(default=1000, ge=50, le=5000),
+        radius: int = Query(
+            default=app_settings.transitous_nearby_radius_m,
+            ge=MIN_NEARBY_RADIUS_M,
+            le=MAX_NEARBY_RADIUS_M,
+        ),
     ) -> list[StopResponse]:
         effective = app_settings.model_copy(update={"transitous_nearby_radius_m": radius})
         return _nearby_stops(stop_id, repo, effective)
@@ -524,7 +544,9 @@ def create_app(
     def list_departures(
         stop_id: str,
         repo: RepositoryDep,
-        limit: int = Query(default=20, ge=1, le=100),
+        limit: int = Query(
+            default=DEFAULT_DEPARTURE_LIMIT, ge=1, le=MAX_DEPARTURE_LIMIT
+        ),
     ) -> list[DepartureResponse]:
         if repo.get_stop(stop_id) is None:
             raise HTTPException(status_code=404, detail=f"Unknown stop: {stop_id}")
@@ -541,7 +563,9 @@ def create_app(
     def live_departures(
         stop_id: str,
         repo: RepositoryDep,
-        limit: int = Query(default=20, ge=1, le=100),
+        limit: int = Query(
+            default=DEFAULT_DEPARTURE_LIMIT, ge=1, le=MAX_DEPARTURE_LIMIT
+        ),
         arrive_by: bool = Query(default=False),
     ) -> list[DepartureResponse]:
         try:
@@ -581,7 +605,9 @@ def create_app(
     def connections(
         from_stop: str = Query(alias="from"),
         to_stop: str = Query(alias="to"),
-        limit: int = Query(default=3, ge=1, le=5),
+        limit: int = Query(
+            default=DEFAULT_CONNECTION_LIMIT, ge=1, le=MAX_CONNECTIONS_PER_SEARCH
+        ),
         time: Annotated[datetime | None, Query()] = None,
         arrive_by: bool = Query(default=False),
     ) -> list[ConnectionResponse]:
