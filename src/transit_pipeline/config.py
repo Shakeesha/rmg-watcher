@@ -108,7 +108,7 @@ class Settings(BaseSettings):
         validation_alias="TRANSITOUS_NEARBY_RADIUS_M",
     )
     transitous_nearby_limit: int = Field(
-        default=8,
+        default=3,
         ge=1,
         le=20,
         validation_alias="TRANSITOUS_NEARBY_LIMIT",
@@ -128,7 +128,7 @@ class Settings(BaseSettings):
         validation_alias="TRANSITOUS_SUGGESTED_RADIUS_M",
     )
     transitous_suggested_limit: int = Field(
-        default=8,
+        default=3,
         ge=1,
         le=20,
         validation_alias="TRANSITOUS_SUGGESTED_LIMIT",

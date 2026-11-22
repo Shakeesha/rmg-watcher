@@ -94,9 +94,9 @@ Transitous is a community service, so this client is deliberately quiet:
   pipeline does not generate a fixed baseline of departure requests.
 - Departures are fetched on demand from the cached catalog and refreshed at most
   once every `TRANSITOUS_MIN_REFRESH_SECONDS` (600 seconds / 10 minutes).
-- On open, the UI calls `/api/stops/suggested` and shows nearby stops around
-  `TRANSITOUS_HOME_LAT/LON`, or around the browser position after **Locate**.
-  This is a local catalog lookup with no external request.
+- On open, the UI calls `/api/stops/suggested` and shows at most three nearby
+  stops around `TRANSITOUS_HOME_LAT/LON`, or around the browser position after
+  **Locate**. This is a local catalog lookup with no external request.
 - The **Connections** view uses the resource-heavy `/v6/plan` endpoint. Results
   are cached for 30 minutes per from/to/time/arriveBy bucket, and a daily
   counter caps fresh plan requests at `TRANSITOUS_PLAN_LIMIT_PER_DAY` (30).
