@@ -1,7 +1,7 @@
 {
   "name": "rmg-watcher",
   "private": true,
-  "version": "0.18.0",
+  "version": "0.18.1",
   "description": "Small-screen kiosk UI for rmg-watcher",
   "type": "module",
   "scripts": {
