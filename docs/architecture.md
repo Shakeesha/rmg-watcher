@@ -1,8 +1,9 @@
 # Architecture
 
-The device is a single-process web service plus a periodic pipeline that share
-one SQLite database. The Svelte kiosk is compiled to static files at build time
-and served by FastAPI, so the Raspberry Pi never runs Node.js.
+RMG-Watcher (RMG = Rhein-Main-Gebiet, the Rhine-Main region) is a single-process
+web service plus a periodic pipeline that share one SQLite database. The Svelte
+kiosk is compiled to static files at build time and served by FastAPI, so the
+Raspberry Pi never runs Node.js.
 
 ## Data flow
 

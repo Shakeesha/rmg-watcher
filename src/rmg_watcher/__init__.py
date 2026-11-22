@@ -1,3 +1,3 @@
-"""Transit delay telemetry pipeline for the Raspberry Pi 5 kiosk device."""
+"""Transit delay telemetry for the Rhein-Main-Gebiet (RMG) on a Pi 5 kiosk."""
 
-__version__ = "0.20.1"
+__version__ = "0.20.2"

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "rmg-watcher"
 dynamic = ["version"]
-description = "RMV/HEAG/DB transit delay telemetry device for Raspberry Pi 5"
+description = "Transit delay telemetry for the Rhein-Main-Gebiet (RMG), served from a Raspberry Pi 5 kiosk"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

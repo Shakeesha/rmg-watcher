@@ -17,7 +17,7 @@ from rmg_watcher.storage.repository import TransitRepository
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="rmg-watcher",
-        description="RMG-Watcher transit telemetry pipeline",
+        description="RMG-Watcher (Rhein-Main-Gebiet) transit telemetry pipeline",
     )
     subparsers = parser.add_subparsers(dest="command")
 

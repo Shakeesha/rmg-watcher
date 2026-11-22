@@ -447,6 +447,7 @@ def create_app(
 
     app = FastAPI(
         title="RMG-Watcher",
+        description="Transit delay telemetry for the Rhein-Main-Gebiet (RMG).",
         version=__version__,
         lifespan=lifespan,
     )

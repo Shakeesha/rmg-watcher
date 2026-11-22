@@ -1,12 +1,13 @@
 # rmg-watcher
 
-Raspberry Pi 5 kiosk that ingests RMV/HEAG/DB transit data, stores it in SQLite,
-and serves a small-screen Svelte UI from a single FastAPI process.
+Raspberry Pi 5 kiosk that ingests RMV/HEAG/DB transit data for the
+Rhein-Main-Gebiet (RMG — the Rhine-Main region), stores it in SQLite, and serves
+a small-screen Svelte UI from a single FastAPI process.
 
-- **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
+- **Backend:** Python 3.11+, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.20.1
+- **Version:** 0.20.2
 
 ## Status
 
@@ -50,8 +51,8 @@ Open <http://127.0.0.1:8000/>. The mock data contains departures for
 ## Live data with Transitous
 
 The default live provider is [Transitous](https://transitous.org/api/), which
-covers RMV, HEAG, and DB services in the Darmstadt-Dieburg area. To switch from
-mock data:
+covers RMV, HEAG, and DB services in the Darmstadt-Dieburg area of the southern
+Rhein-Main-Gebiet. To switch from mock data:
 
 1. Set these values in `.env`:
 
