@@ -30,6 +30,7 @@ class StopResponse(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     distance_m: int | None = None
+    mode: str | None = None
 
 
 class DepartureResponse(BaseModel):

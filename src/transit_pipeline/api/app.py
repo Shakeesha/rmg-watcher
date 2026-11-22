@@ -58,6 +58,16 @@ def _as_datetime(value: object) -> datetime:
     return datetime.now(UTC)
 
 
+def _stop_mode(item: dict[str, object]) -> str | None:
+    modes = item.get("modes")
+    if isinstance(modes, list):
+        for mode in modes:
+            if isinstance(mode, str) and mode:
+                return mode
+    mode = item.get("mode")
+    return mode if isinstance(mode, str) else None
+
+
 def _catalog_stops(settings: Settings) -> list[dict[str, object]]:
     return load_cached_stops(settings.transitous_cache_path / "stops.json")
 
@@ -111,6 +121,7 @@ def _suggested_stops(
                     latitude=float(lat),
                     longitude=float(lon),
                     distance_m=distance,
+                    mode=_stop_mode(item),
                 ),
             )
         )
@@ -181,6 +192,7 @@ def _nearby_stops(
                     latitude=float(lat),
                     longitude=float(lon),
                     distance_m=distance,
+                    mode=_stop_mode(item),
                 ),
             )
         )

@@ -18,10 +18,12 @@ export interface Stop {
   name: string
   latitude: number | null
   longitude: number | null
+  mode: string | null
 }
 
 export interface NearbyStop extends Stop {
   distance_m: number | null
+  mode: string | null
 }
 
 export interface Departure {

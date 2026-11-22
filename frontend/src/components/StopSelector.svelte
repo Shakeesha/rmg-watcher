@@ -25,6 +25,30 @@
     onLocate,
   }: Props = $props()
 
+  let query = $state('')
+
+  const filteredStops = $derived(
+    query.trim() === ''
+      ? stops
+      : stops.filter((stop) => stop.name.toLowerCase().includes(query.trim().toLowerCase())),
+  )
+
+  const filteredNearby = $derived(
+    query.trim() === ''
+      ? nearbyStops
+      : nearbyStops.filter((stop) =>
+          stop.name.toLowerCase().includes(query.trim().toLowerCase()),
+        ),
+  )
+
+  function modeIcon(mode: string | null): string {
+    const value = (mode ?? '').toLowerCase()
+    if (value.includes('bus') || value.includes('coach')) return '🚌'
+    if (value.includes('tram') || value.includes('light_rail')) return '🚊'
+    if (value.includes('rail') || value.includes('train')) return '🚆'
+    return '•'
+  }
+
   function distanceLabel(metres: number | null): string {
     if (metres === null) return ''
     if (metres < 1000) return `${metres} m`
@@ -34,8 +58,17 @@
 
 <section class="stop-selector" aria-label="Choose a stop">
   <span class="selector-label">Stop</span>
+  <input
+    class="stop-search"
+    type="search"
+    placeholder="Search stops"
+    aria-label="Search stops"
+    bind:value={query}
+    data-nav
+  />
+
   <div class="stop-buttons" role="group" aria-label="Configured stops">
-    {#each stops as stop (stop.stop_id)}
+    {#each filteredStops as stop (stop.stop_id)}
       <button
         type="button"
         class="stop-button"
@@ -44,6 +77,7 @@
         aria-pressed={selectedStopId === stop.stop_id}
         onclick={() => onSelect(stop.stop_id)}
       >
+        <span class="mode" aria-hidden="true">{modeIcon(stop.mode ?? null)}</span>
         {stop.name}
       </button>
     {:else}
@@ -73,7 +107,7 @@
       {:else if nearbyStops.length === 0}
         <span class="empty">No nearby stops found.</span>
       {:else}
-        {#each nearbyStops as stop (stop.stop_id)}
+        {#each filteredNearby as stop (stop.stop_id)}
           <button
             type="button"
             class="nearby-button"
@@ -82,6 +116,7 @@
             aria-pressed={selectedStopId === stop.stop_id}
             onclick={() => onSelectNearby(stop)}
           >
+            <span class="mode" aria-hidden="true">{modeIcon(stop.mode ?? null)}</span>
             {stop.name}
             <span class="distance">{distanceLabel(stop.distance_m)}</span>
           </button>
@@ -108,6 +143,17 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  .stop-search {
+    flex: 1 1 100%;
+    min-height: 48px;
+    padding: 0 12px;
+    border: 1px solid #2d3a49;
+    border-radius: 10px;
+    background: #18212b;
+    color: var(--color-text);
+    font: inherit;
   }
 
   .stop-buttons {
@@ -139,6 +185,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
+  }
+
+  .mode {
+    margin-right: 6px;
+    font-size: 1.1rem;
   }
 
   .stop-button.active {

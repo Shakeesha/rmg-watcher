@@ -4,6 +4,7 @@
   import ConnectionList from './components/ConnectionList.svelte'
   import DepartureList from './components/DepartureList.svelte'
   import DelayMetricsCard from './components/DelayMetricsCard.svelte'
+  import NearbyMap from './components/NearbyMap.svelte'
   import StatusBanner from './components/StatusBanner.svelte'
   import StopSelector from './components/StopSelector.svelte'
   import TopNavBar from './components/TopNavBar.svelte'
@@ -66,6 +67,15 @@
       [...stops, ...nearbyStops].map((stop) => [stop.stop_id, stop.name] as const),
     ),
   )
+
+  const mapCenter = $derived.by(() => {
+    const stop = [...stops, ...nearbyStops].find(
+      (item) => item.stop_id === selectedStopId,
+    )
+    return stop && stop.latitude !== null && stop.longitude !== null
+      ? { latitude: stop.latitude, longitude: stop.longitude }
+      : null
+  })
 
   function isAbortError(caught: unknown): boolean {
     return caught instanceof DOMException && caught.name === 'AbortError'
@@ -289,6 +299,14 @@
       onSelectNearby={(stop) => selectStop(stop.stop_id)}
       onLocate={locate}
     />
+    {#if nearbyOpen}
+      <NearbyMap
+        stops={nearbyStops}
+        center={mapCenter}
+        {selectedStopId}
+        onSelect={(stop) => selectStop(stop.stop_id)}
+      />
+    {/if}
   {/if}
 
   <StatusBanner {health} {error} {online} {lastUpdated} />
