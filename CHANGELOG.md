@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-22
+
+### Added
+
+- Tight-transfer warnings on connection results when a change is five minutes
+  or less.
+
+### Removed
+
+- The standalone Transfers view; transfer risk is now shown in context on
+  selected connections.
+
 ## [0.13.1] - 2026-11-22
 
 ### Fixed

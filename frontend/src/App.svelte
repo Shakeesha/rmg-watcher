@@ -8,7 +8,6 @@
   import StatusBanner from './components/StatusBanner.svelte'
   import StopSelector from './components/StopSelector.svelte'
   import TopNavBar from './components/TopNavBar.svelte'
-  import TransferRiskList from './components/TransferRiskList.svelte'
   import {
     fetchAlerts,
     fetchConnections,
@@ -347,8 +346,6 @@
       />
     {:else if $activeView === 'delays'}
       <DelayMetricsCard {metrics} {loading} />
-    {:else if $activeView === 'transfers'}
-      <TransferRiskList risks={metrics?.transfer_risks ?? []} stops={[...stops, ...nearbyStops]} {loading} />
     {:else if $activeView === 'connections'}
       <ConnectionList
         stops={[...stops, ...nearbyStops]}

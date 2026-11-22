@@ -91,6 +91,18 @@
     return `background-color: ${value}`
   }
 
+  function tightTransferMinutes(connection: Connection): number[] {
+    const result: number[] = []
+    for (let index = 0; index < connection.legs.length - 1; index += 1) {
+      const arrival = new Date(connection.legs[index].arrival).getTime()
+      const departure = new Date(connection.legs[index + 1].departure).getTime()
+      if (Number.isNaN(arrival) || Number.isNaN(departure)) continue
+      const minutes = Math.round((departure - arrival) / 60_000)
+      if (minutes >= 0 && minutes <= 5) result.push(minutes)
+    }
+    return result
+  }
+
   function search(): void {
     if (!canSearch()) return
     onSearch(fromStop, toStop, travelTime || undefined, arriveBy)
@@ -221,6 +233,7 @@
   {:else}
     <ol class="connection-list">
       {#each connections as connection, index (index)}
+        {@const tightTransfers = tightTransferMinutes(connection)}
         <li class="connection-row">
           <div class="connection-summary">
             <strong>
@@ -231,6 +244,12 @@
               {connection.transfers === 0 ? 'direct' : `${connection.transfers} changes`}
             </span>
           </div>
+
+          {#if tightTransfers.length > 0}
+            <p class="transfer-warning" role="status">
+              ⚠ Tight transfer: {Math.min(...tightTransfers)} min to change
+            </p>
+          {/if}
 
           <div class="legs">
             {#each connection.legs as leg, legIndex (legIndex)}
@@ -494,6 +513,16 @@
   .legs {
     display: grid;
     gap: 6px;
+  }
+
+  .transfer-warning {
+    margin: 6px 0 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #4a3410;
+    color: #ffd58a;
+    font-size: 0.78rem;
+    font-weight: 700;
   }
 
   .leg-detail {
