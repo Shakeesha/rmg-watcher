@@ -5,11 +5,18 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+DEFAULT_WATCH_STOPS = (
+    "de-DELFI_de:06411:4734",  # Darmstadt Hauptbahnhof
+    "de-amarillo-bw_de:06411:4736",  # Darmstadt Luisenplatz
+    "de-DELFI_de:06432:8456",  # Dieburg Bahnhof
+)
 
 
 def is_pytest_running() -> bool:
@@ -42,6 +49,10 @@ class Settings(BaseSettings):
     )
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
 
+    transit_provider: Literal["transitous", "generic"] = Field(
+        default="transitous",
+        validation_alias="TRANSIT_PROVIDER",
+    )
     transit_api_base_url: str = Field(
         default="https://example.invalid/api",
         validation_alias="TRANSIT_API_BASE_URL",
@@ -49,6 +60,42 @@ class Settings(BaseSettings):
     transit_api_key: SecretStr | None = Field(
         default=None,
         validation_alias="TRANSIT_API_KEY",
+    )
+
+    transitous_base_url: str = Field(
+        default="https://api.transitous.org/api",
+        validation_alias="TRANSITOUS_BASE_URL",
+    )
+    transitous_contact: str | None = Field(
+        default=None,
+        validation_alias="TRANSIT_CONTACT",
+    )
+    transitous_area_min: str = Field(
+        default="49.75,8.85",
+        validation_alias="TRANSITOUS_AREA_MIN",
+    )
+    transitous_area_max: str = Field(
+        default="49.95,8.55",
+        validation_alias="TRANSITOUS_AREA_MAX",
+    )
+    transitous_watch_stops: tuple[str, ...] = Field(
+        default=DEFAULT_WATCH_STOPS,
+        validation_alias="TRANSITOUS_WATCH_STOPS",
+    )
+    transitous_departure_limit: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+        validation_alias="TRANSITOUS_DEPARTURE_LIMIT",
+    )
+    transitous_min_refresh_seconds: int = Field(
+        default=600,
+        ge=60,
+        validation_alias="TRANSITOUS_MIN_REFRESH_SECONDS",
+    )
+    transitous_cache_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "transitous",
+        validation_alias="TRANSITOUS_CACHE_PATH",
     )
 
     api_host: str = Field(default="0.0.0.0", validation_alias="API_HOST")
@@ -63,6 +110,13 @@ class Settings(BaseSettings):
     def _blank_api_key_is_none(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip():
             return None
+        return value
+
+    @field_validator("transitous_watch_stops", mode="before")
+    @classmethod
+    def _split_watch_stops(cls, value: object) -> object:
+        if isinstance(value, str):
+            return tuple(part.strip() for part in value.split(",") if part.strip())
         return value
 
     @model_validator(mode="after")

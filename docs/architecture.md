@@ -68,8 +68,12 @@ the pipeline container at 512 MB, keeping total container memory at 1.28 GB.
 
 ## Live versus mock mode
 
-- `PIPELINE_MOCK_MODE=false` (default) uses `LiveTransitClient`, which requires
-  `TRANSIT_API_BASE_URL` and `TRANSIT_API_KEY`.
+- `PIPELINE_MOCK_MODE=false` (default) uses `TRANSIT_PROVIDER=transitous` and
+  `TransitousClient`, which reads the MOTIS v6 API at
+  `https://api.transitous.org/api/`. `TRANSIT_CONTACT` is required and is sent
+  in the `User-Agent` as required by the Transitous usage policy.
+- `TRANSIT_PROVIDER=generic` keeps the original `LiveTransitClient` for a
+  custom REST API that already exposes `/stops` and `/departures/{stop_id}`.
 - `PIPELINE_MOCK_MODE=true` uses `MockTransitClient` backed by
   `tests/fixtures/stops.json` and `sample_departures.json`. It is useful for
   demos and for verifying the UI without credentials.
@@ -80,10 +84,26 @@ the pipeline container at 512 MB, keeping total container memory at 1.28 GB.
   `quarantine` with a SHA-256 hash and a readable reason; they never reach the
   fact table.
 
+### Transitous request budget
+
+Transitous is a community service, so this client is deliberately quiet:
+
+- The Darmstadt-Dieburg stop catalog is downloaded at most once per 24 hours and
+  cached under `data/transitous/stops.json`.
+- Departures are cached per watched stop and refreshed at most once every
+  `TRANSITOUS_MIN_REFRESH_SECONDS` (600 seconds by default).
+- The default watchlist contains three stops: Darmstadt Hbf, Darmstadt
+  Luisenplatz, and Dieburg Bahnhof. That is roughly 432 departure requests per
+  day, well below the policy's 720-request threshold.
+- To cover more stops, add their IDs to `TRANSITOUS_WATCH_STOPS`; keep the list
+  short. The full catalog is available locally for finding IDs, but polling
+  hundreds of stops would violate the usage policy.
+- The UI links to `transitous.org/sources/` and OpenStreetMap attribution.
+
 ## Reliability
 
-- The live client uses strict timeouts and exponential backoff for HTTP 429 and
-  transient 5xx responses, honouring `Retry-After` when present.
+- Both live clients use strict timeouts; the generic client also retries HTTP
+  429 and transient 5xx responses with exponential backoff and `Retry-After`.
 - Fact rows are keyed by `(trip_id, stop_id)`, so repeated batches update in
   place instead of creating duplicates.
 - Quality gates reconcile raw, valid, deduplicated, loaded, and quarantined

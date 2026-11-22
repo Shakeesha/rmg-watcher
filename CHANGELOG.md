@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-22
+
+### Added
+
+- `TransitousClient` for live RMV/HEAG/DB data via the Transitous MOTIS v6 API.
+- Required `TRANSIT_CONTACT` in the User-Agent, per the Transitous usage policy.
+- Daily cached stop catalog and per-stop departure cache with a 10-minute
+  minimum refresh interval to keep request volume low.
+- Configurable Darmstadt-Dieburg bounding box and watched-stop list.
+- Transitous and OpenStreetMap attribution in the kiosk UI and README.
+- Tests for Transitous mapping, caching, and contact enforcement.
+
 ## [0.10.2] - 2026-11-22
 
 ### Fixed

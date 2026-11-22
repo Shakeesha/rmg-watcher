@@ -21,6 +21,7 @@ def test_factory_builds_live_client_outside_mock_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("TRANSIT_PROVIDER", "generic")
     monkeypatch.setenv("TRANSIT_API_KEY", "secret")
     settings = Settings(mock_mode=False, _env_file=None)
 

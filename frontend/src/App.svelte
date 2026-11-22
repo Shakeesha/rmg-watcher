@@ -169,6 +169,17 @@
       <TransferRiskList risks={metrics?.transfer_risks ?? []} {stops} {loading} />
     {/if}
   </main>
+
+  <footer class="attribution">
+    Data:
+    <a href="https://transitous.org/sources/" target="_blank" rel="noopener noreferrer">
+      Transitous sources
+    </a>
+    ·
+    <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+      © OpenStreetMap contributors
+    </a>
+  </footer>
 </div>
 
 <style>
@@ -188,5 +199,19 @@
     min-height: 0;
     padding: 8px 10px 10px;
     overflow: hidden;
+  }
+
+  .attribution {
+    flex: 0 0 auto;
+    padding: 0 10px 4px;
+    color: var(--color-muted);
+    font-size: 0.66rem;
+    text-align: right;
+  }
+
+  .attribution a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 </style>

@@ -15,6 +15,7 @@ from transit_pipeline import __version__
 from transit_pipeline.config import PROJECT_ROOT, Settings
 from transit_pipeline.domain.exceptions import ApiError
 from transit_pipeline.ingestion.retries import RetryPolicy, request_with_retries
+from transit_pipeline.ingestion.transitous import TransitousClient
 
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
 DEFAULT_TIMEOUT_SECONDS = 10.0
@@ -135,9 +136,13 @@ def create_fetcher(settings: Settings) -> TransitFetcher:
     """Build the fetcher selected by the current settings."""
     if settings.mock_mode:
         return MockTransitClient()
-    if settings.transit_api_key is None:
-        raise ApiError("TRANSIT_API_KEY is required in live mode")
-    return LiveTransitClient(
-        base_url=settings.transit_api_base_url,
-        api_key=settings.transit_api_key.get_secret_value(),
-    )
+    if settings.transit_provider == "transitous":
+        return TransitousClient(settings)
+    if settings.transit_provider == "generic":
+        if settings.transit_api_key is None:
+            raise ApiError("TRANSIT_API_KEY is required in live mode")
+        return LiveTransitClient(
+            base_url=settings.transit_api_base_url,
+            api_key=settings.transit_api_key.get_secret_value(),
+        )
+    raise ApiError(f"Unsupported transit provider: {settings.transit_provider}")

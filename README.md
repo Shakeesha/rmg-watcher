@@ -6,7 +6,7 @@ and serves a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.10.2
+- **Version:** 0.11.0
 
 ## Status
 
@@ -43,6 +43,42 @@ python -m transit_pipeline serve
 
 Open <http://127.0.0.1:8000/>. The mock data contains departures for
 `luisenplatz` and `hbf`, including duplicates, malformed rows, and delays.
+
+## Live data with Transitous
+
+The default live provider is [Transitous](https://transitous.org/api/), which
+covers RMV, HEAG, and DB services in the Darmstadt-Dieburg area. To switch from
+mock data:
+
+1. Set these values in `.env`:
+
+   ```ini
+   PIPELINE_MOCK_MODE=false
+   TRANSIT_PROVIDER=transitous
+   TRANSIT_CONTACT=you@example.com        # or a project URL; required by Transitous
+   ```
+
+2. Optionally adjust the area and watchlist:
+
+   ```ini
+   TRANSITOUS_AREA_MIN=49.75,8.85
+   TRANSITOUS_AREA_MAX=49.95,8.55
+   TRANSITOUS_WATCH_STOPS=de-DELFI_de:06411:4734,de-amarillo-bw_de:06411:4736,de-DELFI_de:06432:8456
+   TRANSITOUS_MIN_REFRESH_SECONDS=600
+   ```
+
+3. Run `python -m transit_pipeline run` and serve the UI as above.
+
+The default watchlist is Darmstadt Hbf, Darmstadt Luisenplatz, and Dieburg
+Bahnhof. The full regional catalog is cached once per day under
+`data/transitous/`, but only the watched stops are refreshed. Add more stop IDs
+to `TRANSITOUS_WATCH_STOPS` as needed — keep the list short to respect the
+Transitous usage policy. At the default 10-minute refresh interval, three stops
+generate roughly 432 API requests per day.
+
+The UI links to [Transitous sources](https://transitous.org/sources/) and
+OpenStreetMap attribution. Consider
+[donating to Transitous](https://transitous.org/donate/).
 
 ## CLI
 
@@ -107,9 +143,9 @@ sudo chmod 600 .env
 sudo -u transit mkdir -p data/raw data/quarantine
 ```
 
-Set `PIPELINE_MOCK_MODE=false`, `TRANSIT_API_BASE_URL`, and `TRANSIT_API_KEY` in
-`.env` for live data. Build the frontend either on the Pi or on a development
-machine and copy `frontend/dist`:
+Set `PIPELINE_MOCK_MODE=false`, `TRANSIT_PROVIDER=transitous`, and a
+`TRANSIT_CONTACT` value in `.env` for live data. Build the frontend either on
+the Pi or on a development machine and copy `frontend/dist`:
 
 ```bash
 sudo -u transit sh -c 'cd frontend && npm ci && npm run build'
