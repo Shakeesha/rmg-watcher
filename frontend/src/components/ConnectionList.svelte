@@ -60,6 +60,26 @@
     return fromStop !== '' && toStop !== '' && fromStop !== toStop
   }
 
+  function swapStops(): void {
+    const previous = fromStop
+    fromStop = toStop
+    toStop = previous
+  }
+
+  function toLocalInput(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+
+  function setOffset(minutes: number): void {
+    travelTime = toLocalInput(new Date(Date.now() + minutes * 60_000))
+  }
+
+  function shiftTime(minutes: number): void {
+    const base = travelTime ? new Date(travelTime) : new Date()
+    travelTime = toLocalInput(new Date(base.getTime() + minutes * 60_000))
+  }
+
   function search(): void {
     if (!canSearch()) return
     onSearch(fromStop, toStop, travelTime || undefined, arriveBy)
@@ -110,6 +130,10 @@
   </div>
 
   <div class="action-row">
+    <button type="button" class="swap-button" data-nav onclick={swapStops} aria-label="Swap from and to stops">
+      ⇅
+    </button>
+
     <div class="time-mode" role="group" aria-label="Time mode">
       <button
         type="button"
@@ -148,6 +172,14 @@
     >
       Save
     </button>
+  </div>
+
+  <div class="quick-times" role="group" aria-label="Quick time selection">
+    <button type="button" data-nav onclick={() => setOffset(0)}>Now</button>
+    <button type="button" data-nav onclick={() => setOffset(15)}>in 15 min</button>
+    <button type="button" data-nav onclick={() => setOffset(60)}>in 1 h</button>
+    <button type="button" data-nav onclick={() => shiftTime(-15)}>Earlier</button>
+    <button type="button" data-nav onclick={() => shiftTime(15)}>Later</button>
   </div>
 
   {#if favourites.length > 0}
@@ -281,6 +313,37 @@
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+
+  .swap-button {
+    flex: 0 0 auto;
+    min-width: 54px;
+    min-height: 54px;
+    border: 1px solid #2d3a49;
+    border-radius: 10px;
+    background: #18212b;
+    color: #bde9ff;
+    font-size: 1.4rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .quick-times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .quick-times button {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid #2d3a49;
+    border-radius: 999px;
+    background: #18212b;
+    color: var(--color-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
   }
 
   .time-mode {

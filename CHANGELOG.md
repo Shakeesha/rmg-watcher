@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search field and transport-mode icons in the nearby stop list.
 - Lightweight local map of nearby stops, drawn without external tiles.
 - Departures/Arrivals toggle backed by MOTIS `arriveBy`.
+- From/To swap, quick time chips, and earlier/later controls for connections.
 
 ## [0.12.0] - 2026-11-22
 
