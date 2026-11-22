@@ -555,7 +555,7 @@
             <div class="route-flow">
               {#each legs as leg, legIndex (legIndex)}
                 {#if legIndex > 0}
-                  <span class="transfer-icon" aria-hidden="true">🚶</span>
+                  <span class="transfer-icon" aria-label="Walk">🚶‍♂️ →</span>
                 {/if}
                 <span class="route-chip" style={routeStyle(leg.route_color)}>
                   {routeLabel(leg.route, leg.mode)}
@@ -837,7 +837,8 @@
 
   .transfer-icon {
     color: var(--color-muted);
-    font-size: 1rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
   }
 
   .card-from {
