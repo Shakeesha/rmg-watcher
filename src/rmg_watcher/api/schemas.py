@@ -49,6 +49,7 @@ class DepartureResponse(BaseModel):
     delay_category: str
     status: str
     mode: str | None = None
+    wheelchair_accessible: bool | None = None
 
 
 class RouteDelayResponse(BaseModel):

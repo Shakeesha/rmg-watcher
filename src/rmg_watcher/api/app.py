@@ -245,6 +245,7 @@ def _live_departures(
                 delay_category=event.delay_category.value,
                 status=event.status.value,
                 mode=record.route_mode,
+                wheelchair_accessible=record.wheelchair_accessible,
             )
         )
     return result

@@ -11,6 +11,14 @@
 
   let { departures, loading, stopName, arriveBy, onToggleArriveBy }: Props = $props()
 
+  let accessibleOnly = $state(false)
+
+  const visible = $derived(
+    accessibleOnly
+      ? departures.filter((departure) => departure.wheelchair_accessible === true)
+      : departures,
+  )
+
   const timeFormatter = new Intl.DateTimeFormat(undefined, {
     hour: '2-digit',
     minute: '2-digit',
@@ -89,18 +97,31 @@
         </button>
       </div>
     </div>
-    <span class="count">{departures.length} shown</span>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="accessible-toggle"
+        class:active={accessibleOnly}
+        data-nav
+        aria-pressed={accessibleOnly}
+        title="Show only accessible departures"
+        onclick={() => (accessibleOnly = !accessibleOnly)}
+      >
+        ♿
+      </button>
+      <span class="count">{visible.length} shown</span>
+    </div>
   </header>
 
-  {#if loading && departures.length === 0}
+  {#if loading && visible.length === 0}
     <p class="state" role="status">Loading departures…</p>
-  {:else if departures.length === 0}
+  {:else if visible.length === 0}
     <p class="state" role="status">
       No upcoming {arriveBy ? 'arrivals' : 'departures'} for {stopName}.
     </p>
   {:else}
     <ol class="rows">
-      {#each departures as departure (departure.trip_id)}
+      {#each visible as departure (departure.trip_id)}
         <li class="departure-row" class:cancelled={departure.status === 'cancelled'}>
           <span
             class="mode-icon"
@@ -120,6 +141,9 @@
               {formatTime(departure.expected_time ?? departure.scheduled_time)}
             </span>
             <span class="departure-sub">
+              {#if departure.wheelchair_accessible}
+                ♿
+              {/if}
               {#if departure.expected_time}
                 scheduled {formatTime(departure.scheduled_time)}
               {:else}
@@ -183,6 +207,30 @@
     border-color: var(--color-accent);
     background: #123d25;
     color: #d9ffe7;
+  }
+
+  .header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .accessible-toggle {
+    min-width: 52px;
+    min-height: 44px;
+    border: 1px solid #2d3a49;
+    border-radius: 10px;
+    background: #18212b;
+    color: var(--color-text);
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+
+  .accessible-toggle.active {
+    border-color: #7dd3fc;
+    background: #123247;
+    color: #e0f5ff;
   }
 
   .count {

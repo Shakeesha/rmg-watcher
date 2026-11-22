@@ -37,6 +37,7 @@ class ValidDeparture:
     status: TripStatus
     route_short_name: str | None = None
     route_mode: str | None = None
+    wheelchair_accessible: bool | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +95,10 @@ class DeparturePayload(BaseModel):
     route_mode: str | None = Field(
         default=None,
         validation_alias=AliasChoices("routeMode", "route_mode"),
+    )
+    wheelchair_accessible: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("wheelchairAccessible", "wheelchair_accessible"),
     )
 
     @field_validator("status", mode="before")
@@ -183,6 +188,7 @@ def validate_departures(
                 status=payload.status,
                 route_short_name=payload.route_short_name,
                 route_mode=payload.route_mode,
+                wheelchair_accessible=payload.wheelchair_accessible,
             )
         )
 

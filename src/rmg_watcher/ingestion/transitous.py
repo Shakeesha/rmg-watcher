@@ -517,6 +517,9 @@ class TransitousClient:
             "status": status,
             "routeShortName": short_name if isinstance(short_name, str) else None,
             "routeMode": mode.lower() if isinstance(mode, str) else None,
+            "wheelchairAccessible": stop_time.get("wheelchairAccessible")
+            if isinstance(stop_time.get("wheelchairAccessible"), bool)
+            else None,
         }
 
     def _read_cache(self, path: Path, ttl_seconds: int) -> object | None:

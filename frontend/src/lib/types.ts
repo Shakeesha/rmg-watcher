@@ -38,6 +38,7 @@ export interface Departure {
   delay_category: string
   status: string
   mode: string | null
+  wheelchair_accessible: boolean | null
 }
 
 export interface RouteDelay {
