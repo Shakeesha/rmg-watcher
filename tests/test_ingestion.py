@@ -73,11 +73,14 @@ def test_retries_stop_after_max_attempts() -> None:
         route = respx.get("https://api.example/departures/hbf").mock(
             return_value=httpx.Response(503)
         )
-        with LiveTransitClient(
-            "https://api.example",
-            retry_policy=policy,
-            sleep=lambda _: None,
-        ) as client, pytest.raises(ApiError):
+        with (
+            LiveTransitClient(
+                "https://api.example",
+                retry_policy=policy,
+                sleep=lambda _: None,
+            ) as client,
+            pytest.raises(ApiError),
+        ):
             client.fetch_departures("hbf")
 
         assert route.call_count == 2
@@ -88,9 +91,10 @@ def test_client_errors_are_not_retried() -> None:
         route = respx.get("https://api.example/departures/hbf").mock(
             return_value=httpx.Response(404)
         )
-        with LiveTransitClient(
-            "https://api.example", sleep=lambda _: None
-        ) as client, pytest.raises(ApiError):
+        with (
+            LiveTransitClient("https://api.example", sleep=lambda _: None) as client,
+            pytest.raises(ApiError),
+        ):
             client.fetch_departures("hbf")
 
         assert route.call_count == 1

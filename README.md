@@ -7,7 +7,7 @@ a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.11+, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.20.3
+- **Version:** 0.21.0
 
 ## Status
 
@@ -133,6 +133,7 @@ Interactive OpenAPI docs are available at `/docs`.
 ```bash
 python -m pytest
 ruff check .
+ruff format --check .
 mypy
 
 cd frontend
@@ -141,8 +142,24 @@ npm run build
 ```
 
 Tests force mock mode through `PYTEST_CURRENT_TEST` and block outbound sockets,
-so the suite never contacts a live API. CI runs the same commands on Python 3.12
-and Node 22.
+so the suite never contacts a live API. CI runs the same commands on Python 3.11
+and 3.12 and Node 22.
+
+### CI and deployment gates
+
+`.github/workflows/ci.yml` runs every check before a release archive is attached
+to a version tag:
+
+- **Backend:** pytest (unit, API/integration, idempotency, Transitous), ruff
+  lint and format checks, mypy, on Python 3.11 and 3.12.
+- **Frontend:** svelte-check, TypeScript, and a production Vite build.
+- **Security:** pip-audit for Python and `npm audit --audit-level=high` for Node.
+- **Static checks:** shell syntax, TOML/YAML/JSON validity, required deployment
+  files, and a test that `.env.example` documents every settings field.
+- **Package and rehearsal:** the Pi archive is built, extracted, installed into a
+  fresh virtual environment, and the packaged API is started and probed.
+- **Container:** the Dockerfile is built and the Compose file is validated.
+- **Gate:** all jobs must pass before the `release` job can attach the archive.
 
 ## Raspberry Pi 5 deployment
 

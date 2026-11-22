@@ -66,9 +66,7 @@ def test_initialize_creates_schema(tmp_path: Path) -> None:
     with database.session() as connection:
         tables = {
             row["name"]
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
     assert tables >= EXPECTED_TABLES
 
@@ -112,9 +110,7 @@ def test_event_upsert_updates_existing_row(tmp_path: Path) -> None:
     _seed(repository)
 
     repository.upsert_events([_event(delay_seconds=240)])
-    repository.upsert_events(
-        [_event(delay_seconds=600, delay_category=DelayCategory.MAJOR)]
-    )
+    repository.upsert_events([_event(delay_seconds=600, delay_category=DelayCategory.MAJOR)])
 
     departures = repository.list_departures("luisenplatz")
     assert len(departures) == 1

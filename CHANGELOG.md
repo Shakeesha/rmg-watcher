@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-22
+
+### Added
+
+- Pre-deployment CI covering backend tests on Python 3.11 and 3.12, ruff lint
+  and format checks, mypy, frontend checks and build, Python and Node dependency
+  audits, configuration validation, an archive installation smoke test, and a
+  container build.
+- A deployment gate that must pass before a release archive is attached to a tag.
+- A test that `.env.example` documents every settings field.
+
 ## [0.20.3] - 2026-11-22
 
 ### Changed

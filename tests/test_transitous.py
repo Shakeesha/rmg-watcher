@@ -138,9 +138,7 @@ def test_client_requires_a_contact(transitous_settings: Settings) -> None:
 
 @respx.mock
 def test_connections_cache_and_daily_cap(transitous_settings: Settings) -> None:
-    settings = transitous_settings.model_copy(
-        update={"transitous_plan_limit_per_day": 1}
-    )
+    settings = transitous_settings.model_copy(update={"transitous_plan_limit_per_day": 1})
     route = respx.get(f"{BASE}/v6/plan").mock(
         return_value=httpx.Response(200, json={"itineraries": [{"id": "it-1"}]})
     )
@@ -182,9 +180,7 @@ def test_departures_use_stale_cache_when_api_fails(
         fresh = client.fetch_departures("stop-x")
 
     digest = hashlib.sha256(b"stop-x|0").hexdigest()[:20]
-    cache_path = (
-        transitous_settings.transitous_cache_path / "departures" / f"{digest}.json"
-    )
+    cache_path = transitous_settings.transitous_cache_path / "departures" / f"{digest}.json"
     document = json.loads(cache_path.read_text(encoding="utf-8"))
     document["fetched_at"] = "2020-01-01T00:00:00+00:00"
     cache_path.write_text(json.dumps(document), encoding="utf-8")

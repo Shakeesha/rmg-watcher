@@ -122,9 +122,7 @@ def test_built_frontend_is_served(
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text("<html>kiosk</html>", encoding="utf-8")
     (dist / "assets" / "app.js").write_text("console.log('ok')", encoding="utf-8")
-    app = create_app(
-        settings=settings.model_copy(update={"frontend_dist_path": dist})
-    )
+    app = create_app(settings=settings.model_copy(update={"frontend_dist_path": dist}))
 
     with TestClient(app) as test_client:
         assert test_client.get("/").text == "<html>kiosk</html>"
@@ -204,9 +202,7 @@ def test_connections_endpoint_is_empty_in_mock_mode(
     app = create_app(settings=settings, repository=repository)
 
     with TestClient(app) as test_client:
-        response = test_client.get(
-            "/api/connections?from=luisenplatz&to=hbf"
-        )
+        response = test_client.get("/api/connections?from=luisenplatz&to=hbf")
 
     assert response.status_code == 200
     assert response.json() == []
@@ -253,9 +249,7 @@ def test_suggested_stops_are_deduplicated(
     )
 
     with TestClient(app) as test_client:
-        response = test_client.get(
-            "/api/stops/suggested?lat=49.872881&lon=8.651252&radius=1500"
-        )
+        response = test_client.get("/api/stops/suggested?lat=49.872881&lon=8.651252&radius=1500")
 
     assert response.status_code == 200
     stops = response.json()

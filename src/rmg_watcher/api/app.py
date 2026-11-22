@@ -196,15 +196,19 @@ def _nearby_stops(
 
     candidates: list[dict[str, object]]
     catalog = _catalog_stops(settings)
-    candidates = catalog if catalog else [
-        {
-            "stopId": stop.stop_id,
-            "name": stop.name,
-            "latitude": stop.latitude,
-            "longitude": stop.longitude,
-        }
-        for stop in repo.list_stops()
-    ]
+    candidates = (
+        catalog
+        if catalog
+        else [
+            {
+                "stopId": stop.stop_id,
+                "name": stop.name,
+                "latitude": stop.latitude,
+                "longitude": stop.longitude,
+            }
+            for stop in repo.list_stops()
+        ]
+    )
 
     current_key = stop_name_key(_stop_name(stop_id, repo, settings))
     groups: dict[str, list[dict[str, object]]] = {}
@@ -310,9 +314,7 @@ def _connection_leg(
                 ConnectionStopResponse(
                     name=str(stop.get("name") or ""),
                     arrival=_as_datetime(stop["arrival"]) if stop.get("arrival") else None,
-                    departure=(
-                        _as_datetime(stop["departure"]) if stop.get("departure") else None
-                    ),
+                    departure=(_as_datetime(stop["departure"]) if stop.get("departure") else None),
                     platform=str(stop["track"]) if stop.get("track") else None,
                 )
             )
@@ -476,9 +478,7 @@ def create_app(
             version=__version__,
             stop_count=stop_count,
             event_count=event_count,
-            last_run_at=(
-                latest.finished_at or latest.started_at if latest is not None else None
-            ),
+            last_run_at=(latest.finished_at or latest.started_at if latest is not None else None),
             last_run_status=latest.status if latest is not None else None,
         )
 
@@ -607,9 +607,7 @@ def create_app(
     def list_departures(
         stop_id: str,
         repo: RepositoryDep,
-        limit: int = Query(
-            default=DEFAULT_DEPARTURE_LIMIT, ge=1, le=MAX_DEPARTURE_LIMIT
-        ),
+        limit: int = Query(default=DEFAULT_DEPARTURE_LIMIT, ge=1, le=MAX_DEPARTURE_LIMIT),
     ) -> list[DepartureResponse]:
         if repo.get_stop(stop_id) is None:
             raise HTTPException(status_code=404, detail=f"Unknown stop: {stop_id}")
@@ -626,9 +624,7 @@ def create_app(
     def live_departures(
         stop_id: str,
         repo: RepositoryDep,
-        limit: int = Query(
-            default=DEFAULT_DEPARTURE_LIMIT, ge=1, le=MAX_DEPARTURE_LIMIT
-        ),
+        limit: int = Query(default=DEFAULT_DEPARTURE_LIMIT, ge=1, le=MAX_DEPARTURE_LIMIT),
         arrive_by: bool = Query(default=False),
     ) -> list[DepartureResponse]:
         try:
@@ -668,9 +664,7 @@ def create_app(
     def connections(
         from_stop: str = Query(alias="from"),
         to_stop: str = Query(alias="to"),
-        limit: int = Query(
-            default=DEFAULT_CONNECTION_LIMIT, ge=1, le=MAX_CONNECTIONS_PER_SEARCH
-        ),
+        limit: int = Query(default=DEFAULT_CONNECTION_LIMIT, ge=1, le=MAX_CONNECTIONS_PER_SEARCH),
         time: Annotated[datetime | None, Query()] = None,
         arrive_by: bool = Query(default=False),
     ) -> list[ConnectionResponse]:
@@ -704,9 +698,7 @@ def create_app(
                 )
                 for route_id, delay in summary.top_delayed_routes
             ],
-            transfer_risks=[
-                TransferRiskResponse.model_validate(risk) for risk in risks
-            ],
+            transfer_risks=[TransferRiskResponse.model_validate(risk) for risk in risks],
         )
 
     _mount_frontend(app, app_settings.frontend_dist_path)
@@ -715,6 +707,7 @@ def create_app(
 
 def _mount_frontend(app: FastAPI, frontend_dir: Path) -> None:
     if not frontend_dir.is_dir():
+
         @app.get("/", include_in_schema=False)
         def frontend_missing() -> dict[str, str]:
             return {

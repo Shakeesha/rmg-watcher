@@ -67,6 +67,7 @@ def canonical_stop(stops: Sequence[dict[str, Any]]) -> dict[str, Any] | None:
 
     return max(stops, key=score)
 
+
 def _normalise(value: str) -> str:
     return " ".join(re.sub(r"[^a-z0-9]", " ", _canonical_input(value)).split())
 

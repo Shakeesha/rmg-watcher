@@ -89,6 +89,7 @@ class PlaceResponse(BaseModel):
 
 class AlertResponse(BaseModel):
     """A service alert affecting a nearby stop."""
+
     code: str
     header: str
     description: str

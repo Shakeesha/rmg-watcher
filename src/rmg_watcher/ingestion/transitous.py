@@ -56,10 +56,7 @@ def distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     d_phi = phi2 - phi1
     d_lambda = math.radians(lon2 - lon1)
-    h = (
-        math.sin(d_phi / 2) ** 2
-        + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
-    )
+    h = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
     return int(2 * radius * math.asin(math.sqrt(h)))
 
 
@@ -67,11 +64,8 @@ def distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
 def cached_stop_index(cache_path: Path) -> dict[str, dict[str, Any]]:
     """Return the regional catalog indexed by stop ID."""
     return {
-        str(stop["stopId"]): stop
-        for stop in load_cached_stops(cache_path)
-        if stop.get("stopId")
+        str(stop["stopId"]): stop for stop in load_cached_stops(cache_path) if stop.get("stopId")
     }
-
 
 
 @lru_cache(maxsize=2)
@@ -203,9 +197,7 @@ class TransitousClient:
 
     def fetch_departures(self, stop_id: str, *, arrive_by: bool = False) -> list[dict[str, Any]]:
         """Return cached or freshly fetched departure/arrival records for one stop."""
-        digest = hashlib.sha256(
-            f"{stop_id}|{int(arrive_by)}".encode()
-        ).hexdigest()[:DIGEST_LENGTH]
+        digest = hashlib.sha256(f"{stop_id}|{int(arrive_by)}".encode()).hexdigest()[:DIGEST_LENGTH]
         cache_path = self._cache_dir / "departures" / f"{digest}.json"
         cached = self._read_cache(
             cache_path,
@@ -278,9 +270,7 @@ class TransitousClient:
                         "header": header,
                         "description": str(alert.get("descriptionText") or ""),
                         "severity": str(alert.get("severityLevel") or "UNKNOWN"),
-                        "url": (
-                            alert.get("url") if isinstance(alert.get("url"), str) else None
-                        ),
+                        "url": (alert.get("url") if isinstance(alert.get("url"), str) else None),
                         "routes": [],
                     }
                     alerts[code] = existing
@@ -304,9 +294,9 @@ class TransitousClient:
 
         count = limit or self._settings.transitous_geocode_limit
         bias_key = "" if bias is None else f"{bias[0]:.4f},{bias[1]:.4f}"
-        digest = hashlib.sha256(
-            f"{query.casefold()}|{count}|{bias_key}".encode()
-        ).hexdigest()[:DIGEST_LENGTH]
+        digest = hashlib.sha256(f"{query.casefold()}|{count}|{bias_key}".encode()).hexdigest()[
+            :DIGEST_LENGTH
+        ]
         cache_path = self._cache_dir / "geocode" / f"{digest}.json"
         cached = self._read_cache(cache_path, CATALOG_TTL_SECONDS)
         if cached is not None:
@@ -364,9 +354,7 @@ class TransitousClient:
             second=0,
             microsecond=0,
         )
-        key_source = (
-            f"{from_stop}|{to_stop}|{bucket.isoformat()}|{int(arrive_by)}"
-        )
+        key_source = f"{from_stop}|{to_stop}|{bucket.isoformat()}|{int(arrive_by)}"
         digest = hashlib.sha256(key_source.encode("utf-8")).hexdigest()[:DIGEST_LENGTH]
         cache_path = self._cache_dir / "connections" / f"{digest}.json"
 
@@ -475,9 +463,7 @@ class TransitousClient:
         expected_value = None if not real_time or not isinstance(expected, str) else expected
 
         cancelled = bool(
-            stop_time.get("cancelled")
-            or stop_time.get("tripCancelled")
-            or place.get("cancelled")
+            stop_time.get("cancelled") or stop_time.get("tripCancelled") or place.get("cancelled")
         )
         status = "cancelled" if cancelled else ("delayed" if real_time else "on_time")
         mode = stop_time.get("mode")

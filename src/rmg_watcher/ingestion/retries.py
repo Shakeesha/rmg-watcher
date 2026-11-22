@@ -63,8 +63,7 @@ def request_with_retries(
         if response.status_code in retry_policy.retry_statuses:
             if attempt == retry_policy.max_attempts:
                 raise ApiError(
-                    f"GET {url} failed with HTTP {response.status_code} "
-                    f"after {attempt} attempts"
+                    f"GET {url} failed with HTTP {response.status_code} after {attempt} attempts"
                 )
             sleep(_retry_after_seconds(response) or retry_policy.delay_for(attempt))
             continue

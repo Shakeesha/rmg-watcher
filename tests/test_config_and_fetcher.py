@@ -15,6 +15,18 @@ from rmg_watcher.config import (
 from rmg_watcher.ingestion.fetcher import MockTransitClient, create_fetcher
 
 
+def test_env_example_documents_every_setting() -> None:
+    example = (PROJECT_ROOT / ".env.example").read_text(encoding="utf-8")
+    documented = {
+        line.split("=", 1)[0].strip()
+        for line in example.splitlines()
+        if "=" in line and not line.lstrip().startswith("#")
+    }
+    aliases = {str(field.validation_alias) for field in Settings.model_fields.values()}
+
+    assert aliases <= documented
+
+
 def test_pytest_is_detected() -> None:
     assert is_pytest_running() is True
 

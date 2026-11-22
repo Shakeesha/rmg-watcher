@@ -78,11 +78,7 @@ def punctuality_rate(
 
 def delay_values(events: Sequence[DelayEvent]) -> list[float]:
     """Return the non-null delay values in seconds."""
-    return [
-        float(event.delay_seconds)
-        for event in events
-        if event.delay_seconds is not None
-    ]
+    return [float(event.delay_seconds) for event in events if event.delay_seconds is not None]
 
 
 def top_delayed_routes(

@@ -67,8 +67,7 @@ class TransitRepository:
     def upsert_stops(self, stops: Sequence[Stop]) -> int:
         timestamp = datetime.now(UTC).isoformat()
         rows = [
-            (stop.stop_id, stop.name, stop.latitude, stop.longitude, timestamp)
-            for stop in stops
+            (stop.stop_id, stop.name, stop.latitude, stop.longitude, timestamp) for stop in stops
         ]
         with self.database.session() as connection:
             connection.executemany(
@@ -317,9 +316,7 @@ class TransitRepository:
                 stop_name=row["stop_name"],
                 scheduled_time=datetime.fromisoformat(row["scheduled_time"]),
                 expected_time=(
-                    datetime.fromisoformat(row["expected_time"])
-                    if row["expected_time"]
-                    else None
+                    datetime.fromisoformat(row["expected_time"]) if row["expected_time"] else None
                 ),
                 delay_seconds=row["delay_seconds"],
                 delay_category=row["delay_category"],
@@ -348,9 +345,7 @@ class TransitRepository:
                 stop_id=row["stop_id"],
                 scheduled_time=datetime.fromisoformat(row["scheduled_time"]),
                 expected_time=(
-                    datetime.fromisoformat(row["expected_time"])
-                    if row["expected_time"]
-                    else None
+                    datetime.fromisoformat(row["expected_time"]) if row["expected_time"] else None
                 ),
                 delay_seconds=row["delay_seconds"],
                 delay_category=DelayCategory(row["delay_category"]),
@@ -367,14 +362,8 @@ class TransitRepository:
 
     def _route_names(self) -> dict[str, str]:
         with self.database.session() as connection:
-            rows = connection.execute(
-                "SELECT route_id, short_name FROM dim_routes"
-            ).fetchall()
-        return {
-            str(row["route_id"]): str(row["short_name"])
-            for row in rows
-            if row["short_name"]
-        }
+            rows = connection.execute("SELECT route_id, short_name FROM dim_routes").fetchall()
+        return {str(row["route_id"]): str(row["short_name"]) for row in rows if row["short_name"]}
 
     def metrics_summary(self, *, limit: int = 5_000) -> MetricsSummary:
         summary = summarize_metrics(self.list_events(limit=limit))
@@ -417,9 +406,7 @@ class TransitRepository:
 
     def count_events(self) -> int:
         with self.database.session() as connection:
-            return int(
-                connection.execute("SELECT COUNT(*) FROM fact_stop_events").fetchone()[0]
-            )
+            return int(connection.execute("SELECT COUNT(*) FROM fact_stop_events").fetchone()[0])
 
     def count_stops(self) -> int:
         with self.database.session() as connection:
