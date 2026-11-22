@@ -55,8 +55,9 @@ export function fetchLiveDepartures(
   stopId: string,
   signal?: AbortSignal,
   limit = 20,
+  arriveBy = false,
 ): Promise<Departure[]> {
-  const path = `/departures/live/${encodeURIComponent(stopId)}?limit=${limit}`
+  const path = `/departures/live/${encodeURIComponent(stopId)}?limit=${limit}&arrive_by=${arriveBy}`
   return getJson<Departure[]>(path, signal)
 }
 

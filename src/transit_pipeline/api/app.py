@@ -206,6 +206,7 @@ def _live_departures(
     limit: int,
     repo: TransitRepository,
     settings: Settings,
+    arrive_by: bool = False,
 ) -> list[DepartureResponse]:
     if settings.mock_mode or settings.transit_provider != "transitous":
         return [
@@ -215,7 +216,7 @@ def _live_departures(
 
     client = TransitousClient(settings)
     try:
-        raw = client.fetch_departures(stop_id)
+        raw = client.fetch_departures(stop_id, arrive_by=arrive_by)
     finally:
         client.close()
 
@@ -439,9 +440,10 @@ def create_app(
         stop_id: str,
         repo: RepositoryDep,
         limit: int = Query(default=20, ge=1, le=100),
+        arrive_by: bool = Query(default=False),
     ) -> list[DepartureResponse]:
         try:
-            return _live_departures(stop_id, limit, repo, app_settings)
+            return _live_departures(stop_id, limit, repo, app_settings, arrive_by)
         except ApiError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 

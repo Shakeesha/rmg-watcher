@@ -46,6 +46,7 @@
   let alertLoading = $state(false)
   let alertError = $state<string | null>(null)
   let departures = $state<Departure[]>([])
+  let arriveBy = $state(false)
   let metrics = $state<Metrics | null>(null)
   let health = $state<HealthResponse | null>(null)
   let lastUpdated = $state<Date | null>(null)
@@ -152,7 +153,7 @@
       if (selectedStopId === null) {
         departures = []
       } else {
-        departures = await fetchLiveDepartures(selectedStopId, controller.signal)
+        departures = await fetchLiveDepartures(selectedStopId, controller.signal, 20, arriveBy)
       }
 
       await loadAlerts(controller)
@@ -170,6 +171,14 @@
         loading = false
       }
     }
+  }
+
+  function toggleArriveBy(value: boolean): void {
+    if (value === arriveBy) return
+    arriveBy = value
+    departures = []
+    loading = true
+    void refresh()
   }
 
   function selectStop(stopId: string): void {
@@ -313,7 +322,13 @@
 
   <main class="kiosk-content">
     {#if $activeView === 'live'}
-      <DepartureList {departures} {loading} stopName={selectedStopName} />
+      <DepartureList
+        {departures}
+        {loading}
+        stopName={selectedStopName}
+        {arriveBy}
+        onToggleArriveBy={toggleArriveBy}
+      />
     {:else if $activeView === 'delays'}
       <DelayMetricsCard {metrics} {loading} />
     {:else if $activeView === 'transfers'}

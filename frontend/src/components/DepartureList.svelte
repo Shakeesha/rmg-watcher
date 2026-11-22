@@ -5,9 +5,11 @@
     departures: Departure[]
     loading: boolean
     stopName: string
+    arriveBy: boolean
+    onToggleArriveBy: (value: boolean) => void
   }
 
-  let { departures, loading, stopName }: Props = $props()
+  let { departures, loading, stopName, arriveBy, onToggleArriveBy }: Props = $props()
 
   const timeFormatter = new Intl.DateTimeFormat(undefined, {
     hour: '2-digit',
@@ -68,7 +70,24 @@
   <header class="list-header">
     <div>
       <h2>{stopName}</h2>
-      <p>Next departures</p>
+      <div class="tabs" role="group" aria-label="Departures or arrivals">
+        <button
+          type="button"
+          class:active={!arriveBy}
+          data-nav
+          onclick={() => onToggleArriveBy(false)}
+        >
+          Departures
+        </button>
+        <button
+          type="button"
+          class:active={arriveBy}
+          data-nav
+          onclick={() => onToggleArriveBy(true)}
+        >
+          Arrivals
+        </button>
+      </div>
     </div>
     <span class="count">{departures.length} shown</span>
   </header>
@@ -76,7 +95,9 @@
   {#if loading && departures.length === 0}
     <p class="state" role="status">Loading departures…</p>
   {:else if departures.length === 0}
-    <p class="state" role="status">No upcoming departures for {stopName}.</p>
+    <p class="state" role="status">
+      No upcoming {arriveBy ? 'arrivals' : 'departures'} for {stopName}.
+    </p>
   {:else}
     <ol class="rows">
       {#each departures as departure (departure.trip_id)}
@@ -140,13 +161,28 @@
     line-height: 1.15;
   }
 
-  .list-header p {
-    margin: 2px 0 0;
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .tabs button {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid #2d3a49;
+    border-radius: 999px;
+    background: #18212b;
     color: var(--color-muted);
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tabs button.active {
+    border-color: var(--color-accent);
+    background: #123d25;
+    color: #d9ffe7;
   }
 
   .count {

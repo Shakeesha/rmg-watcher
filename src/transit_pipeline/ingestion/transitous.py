@@ -182,9 +182,11 @@ class TransitousClient:
         self._write_cache(cache_path, result)
         return result
 
-    def fetch_departures(self, stop_id: str) -> list[dict[str, Any]]:
-        """Return cached or freshly fetched departure records for one stop."""
-        digest = hashlib.sha256(stop_id.encode("utf-8")).hexdigest()[:20]
+    def fetch_departures(self, stop_id: str, *, arrive_by: bool = False) -> list[dict[str, Any]]:
+        """Return cached or freshly fetched departure/arrival records for one stop."""
+        digest = hashlib.sha256(
+            f"{stop_id}|{int(arrive_by)}".encode()
+        ).hexdigest()[:20]
         cache_path = self._cache_dir / "departures" / f"{digest}.json"
         cached = self._read_cache(
             cache_path,
@@ -198,6 +200,7 @@ class TransitousClient:
             params={
                 "stopId": stop_id,
                 "n": self._settings.transitous_departure_limit,
+                "arriveBy": arrive_by,
                 "realtimeMode": "REALTIME",
                 "language": "de",
             },
@@ -208,7 +211,7 @@ class TransitousClient:
         result = [
             record
             for stop_time in _records(payload.get("stopTimes"))
-            if (record := self._map_stop_time(stop_time, stop_id)) is not None
+            if (record := self._map_stop_time(stop_time, stop_id, arrive_by)) is not None
         ]
         self._write_cache(cache_path, result)
         return result
@@ -390,6 +393,7 @@ class TransitousClient:
         self,
         stop_time: dict[str, Any],
         stop_id: str,
+        arrive_by: bool,
     ) -> dict[str, Any] | None:
         place = stop_time.get("place")
         if not isinstance(place, dict):
@@ -402,8 +406,12 @@ class TransitousClient:
         if not isinstance(route_id, str) or not route_id:
             return None
 
-        scheduled = place.get("scheduledDeparture") or place.get("scheduledArrival")
-        expected = place.get("departure") or place.get("arrival")
+        if arrive_by:
+            scheduled = place.get("scheduledArrival") or place.get("scheduledDeparture")
+            expected = place.get("arrival") or place.get("departure")
+        else:
+            scheduled = place.get("scheduledDeparture") or place.get("scheduledArrival")
+            expected = place.get("departure") or place.get("arrival")
         if scheduled is None:
             scheduled = expected
         if not isinstance(scheduled, str) or not scheduled:
