@@ -4,7 +4,7 @@ x-app: &app
   build:
     context: ..
     dockerfile: deploy/Dockerfile
-  image: transit-kiosk:0.15.0
+  image: transit-kiosk:0.15.1
   env_file:
     - ../.env
   environment:

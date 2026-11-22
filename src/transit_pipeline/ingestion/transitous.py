@@ -13,6 +13,7 @@ import hashlib
 import json
 import math
 import re
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,6 +27,7 @@ from transit_pipeline.domain.exceptions import ApiError
 
 CATALOG_TTL_SECONDS = 24 * 60 * 60
 REQUEST_TIMEOUT_SECONDS = 10.0
+RETRY_STATUSES = {429, 500, 502, 503, 504}
 
 
 def _records(value: object) -> list[dict[str, Any]]:
@@ -428,15 +430,30 @@ class TransitousClient:
         )
 
     def _get(self, path: str, *, params: dict[str, str | int | bool]) -> object:
-        try:
-            response = self._client.get(path, params=params)
-            response.raise_for_status()
-        except httpx.HTTPError as exc:
-            raise ApiError(f"Transitous request to {path} failed: {exc}") from exc
-        try:
-            return response.json()
-        except ValueError as exc:
-            raise ApiError(f"Invalid JSON returned by {path}") from exc
+        for attempt in range(2):
+            try:
+                response = self._client.get(path, params=params)
+                if attempt == 0 and response.status_code in RETRY_STATUSES:
+                    time.sleep(1.0)
+                    continue
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                if (
+                    attempt == 0
+                    and exc.response.status_code in RETRY_STATUSES
+                ):
+                    time.sleep(1.0)
+                    continue
+                raise ApiError(f"Transitous request to {path} failed: {exc}") from exc
+            except httpx.HTTPError as exc:
+                raise ApiError(f"Transitous request to {path} failed: {exc}") from exc
+
+            try:
+                return response.json()
+            except ValueError as exc:
+                raise ApiError(f"Invalid JSON returned by {path}") from exc
+
+        raise ApiError(f"Transitous request to {path} failed after retry")
 
     def _map_stop_time(
         self,

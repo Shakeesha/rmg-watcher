@@ -282,7 +282,10 @@
     try {
       connections = await fetchConnections(from, to, undefined, 3, time, arriveBy)
     } catch (caught) {
-      connectionError = caught instanceof Error ? caught.message : 'Unable to plan connections'
+      const message = caught instanceof Error ? caught.message : 'Unable to plan connections'
+      connectionError = /API 5\d\d/.test(message)
+        ? 'Connection lookup is temporarily unavailable. Please try again.'
+        : message
     } finally {
       connectionLoading = false
     }
