@@ -20,12 +20,10 @@ export const GEOLOCATION_MAX_AGE_MS = 300_000
 export const QUICK_OFFSET_FIFTEEN_MIN = 15
 export const QUICK_OFFSET_ONE_HOUR_MIN = MINUTES_PER_HOUR
 
-// Local schematic map geometry (SVG viewBox units).
-export const MAP_MARGIN_X = 30
-export const MAP_PLOT_SIZE = 260
-export const MAP_BASELINE_Y = 290
-export const MAP_TOP_Y = 30
-export const MAP_RIGHT_X = 290
-export const MAP_VIEWBOX_SIZE = 320
-export const MIN_COORD_SPAN = 0.0005
+// Cached raster map geometry.
 export const MAX_MAP_STOPS = 12
+
+export const MAP_ZOOM = 16
+export const TILE_SIZE_PX = 256
+export const TILE_GRID_RADIUS = 1
+export const MAP_BOTTOM_SHEET_LIMIT = 3

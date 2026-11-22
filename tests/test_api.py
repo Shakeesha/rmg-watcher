@@ -42,6 +42,24 @@ def test_health_reports_pipeline_state(client: TestClient) -> None:
     assert body["last_run_status"] == "ok"
 
 
+def test_map_tile_rejects_invalid_coordinates(client: TestClient) -> None:
+    assert client.get("/api/tiles/16/99999/1.png").status_code == 404
+    assert client.get("/api/tiles/99/1/1.png").status_code == 404
+    assert client.get("/api/tiles/16/-1/1.png").status_code == 404
+
+
+def test_map_tile_serves_cached_file(client: TestClient, settings: Settings) -> None:
+    tile = settings.transitous_cache_path / "tiles" / "16" / "34454" / "22365.png"
+    tile.parent.mkdir(parents=True, exist_ok=True)
+    tile.write_bytes(b"cached-png")
+
+    response = client.get("/api/tiles/16/34454/22365.png")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    assert response.content == b"cached-png"
+
+
 def test_stops_are_sorted_by_name(client: TestClient) -> None:
     response = client.get("/api/stops")
 

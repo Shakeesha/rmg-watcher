@@ -6,7 +6,7 @@ and serves a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.19.1
+- **Version:** 0.20.0
 
 ## Status
 
@@ -96,6 +96,11 @@ The **Connections** view plans a trip between two stops. It caches results for
 30 minutes and allows 30 fresh `/plan` requests per day by default; increase
 `TRANSITOUS_PLAN_LIMIT_PER_DAY` only if your usage stays within the Transitous
 policy.
+
+The nearby-stop map is a lightweight tile view: the backend proxies and caches
+OpenStreetMap tiles on disk for seven days, so the Pi uses no mapping library and
+only fetches the handful of tiles currently on screen. Markers still position
+correctly if tiles cannot be fetched.
 
 The UI links to [Transitous sources](https://transitous.org/sources/) and
 OpenStreetMap attribution. Consider

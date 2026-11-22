@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -38,8 +39,11 @@ from rmg_watcher.constants import (
     MAX_SUGGESTED_RADIUS_M,
     MIN_NEARBY_RADIUS_M,
     MIN_SUGGESTED_RADIUS_M,
+    OSM_TILE_URL,
+    SECONDS_PER_DAY,
     SECONDS_PER_MINUTE,
     STOP_CATALOG_FILE,
+    TILE_CACHE_DAYS,
 )
 from rmg_watcher.domain.exceptions import ApiError
 from rmg_watcher.ingestion.transitous import (
@@ -412,6 +416,17 @@ def _alerts(
         client.close()
 
 
+def _tile_path(settings: Settings, z: int, x: int, y: int) -> Path:
+    return settings.transitous_cache_path / "tiles" / str(z) / str(x) / f"{y}.png"
+
+
+def _valid_tile(z: int, x: int, y: int) -> bool:
+    if z < 0 or z > 19 or x < 0 or y < 0:
+        return False
+    limit = 2**z
+    return bool(x < limit and y < limit)
+
+
 def create_app(
     settings: Settings | None = None,
     repository: TransitRepository | None = None,
@@ -465,6 +480,34 @@ def create_app(
             ),
             last_run_status=latest.status if latest is not None else None,
         )
+
+    @app.get(
+        "/api/tiles/{z}/{x}/{y}.png",
+        include_in_schema=False,
+    )
+    def map_tile(z: int, x: int, y: int) -> FileResponse:
+        if not _valid_tile(z, x, y):
+            raise HTTPException(status_code=404, detail="Invalid tile coordinates")
+
+        path = _tile_path(app_settings, z, x, y)
+        max_age = TILE_CACHE_DAYS * SECONDS_PER_DAY
+        if path.is_file() and (datetime.now(UTC).timestamp() - path.stat().st_mtime) <= max_age:
+            return FileResponse(path, media_type="image/png")
+
+        contact = (app_settings.transitous_contact or "").strip() or "local development"
+        with httpx.Client(
+            timeout=10.0,
+            headers={"User-Agent": f"rmg-watcher/{__version__} ({contact})"},
+        ) as client:
+            try:
+                response = client.get(f"{OSM_TILE_URL}/{z}/{x}/{y}.png")
+                response.raise_for_status()
+            except httpx.HTTPError as exc:
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(response.content)
+        return FileResponse(path, media_type="image/png")
 
     @app.get("/api/stops", response_model=list[StopResponse], tags=["stops"])
     def list_stops(repo: RepositoryDep) -> list[StopResponse]:

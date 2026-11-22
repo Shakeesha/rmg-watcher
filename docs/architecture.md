@@ -108,6 +108,12 @@ Transitous is a community service, so this client is deliberately quiet:
   (`TRANSITOUS_ALERT_STOPS`, default 3) and cached for 10 minutes.
 - Route short names and transport-mode icons are used in the UI, so raw GTFS IDs
   are never shown to passengers.
+- The nearby-stop map uses plain `<img>` tiles served by `/api/tiles/{z}/{x}/{y}.png`.
+  The backend fetches each OpenStreetMap tile at most once every seven days and
+  caches it on disk under `data/transitous/tiles`, so the Pi never runs a heavy
+  mapping library and keeps external requests to a minimum. Markers and the user
+  dot are positioned with pure Web Mercator math, so the map still works when
+  tiles are unavailable.
 - The UI links to `transitous.org/sources/` and OpenStreetMap attribution.
 
 ## Reliability

@@ -20,7 +20,7 @@ so the Pi needs no Node.js runtime after deployment.
 
 | View | Content |
 | --- | --- |
-| Live | Search, suggested stops, a local schematic map, transport icons, accessibility filter, and a departures/arrivals toggle with delay badges. |
+| Live | Search, suggested stops, a cached street map with mode-coloured markers, transport icons, accessibility filter, and a departures/arrivals toggle with delay badges. |
 | Delays | Punctuality, median delay, 95th-percentile delay, and the most delayed lines. |
 | Connections | From/To swap, date/time or quick chips, favourites, route bars, tight-transfer warnings, and expandable intermediate stops with platforms. |
 | Alerts | Cached service alerts for nearby stops. |

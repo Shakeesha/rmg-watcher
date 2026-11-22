@@ -1,18 +1,15 @@
 <script lang="ts">
   import { fetchPlaces, resolvePlace } from '../lib/api'
   import { AUTOCOMPLETE_DEBOUNCE_MS } from '../lib/constants'
-  import { formatDistance, transportIcon } from '../lib/format'
-  import type { NearbyStop, PlaceResult, Stop } from '../lib/types'
+  import { transportIcon } from '../lib/format'
+  import type { PlaceResult, Stop } from '../lib/types'
 
   interface Props {
     stops: Stop[]
     selectedStopId: string | null
-    nearbyStops: NearbyStop[]
     nearbyOpen: boolean
-    nearbyLoading: boolean
     onSelect: (stopId: string) => void
     onToggleNearby: () => void
-    onSelectNearby: (stop: NearbyStop) => void
     onLocate: () => void
     onSelectPlace: (place: PlaceResult) => void
   }
@@ -20,12 +17,9 @@
   let {
     stops,
     selectedStopId,
-    nearbyStops,
     nearbyOpen,
-    nearbyLoading,
     onSelect,
     onToggleNearby,
-    onSelectNearby,
     onLocate,
     onSelectPlace,
   }: Props = $props()
@@ -76,14 +70,6 @@
     query.trim() === ''
       ? stops
       : stops.filter((stop) => stop.name.toLowerCase().includes(query.trim().toLowerCase())),
-  )
-
-  const filteredNearby = $derived(
-    query.trim() === ''
-      ? nearbyStops
-      : nearbyStops.filter((stop) =>
-          stop.name.toLowerCase().includes(query.trim().toLowerCase()),
-        ),
   )
 
 </script>
@@ -157,31 +143,6 @@
       Locate
     </button>
   </div>
-
-  {#if nearbyOpen}
-    <div class="nearby-row" role="group" aria-label="Nearby stops">
-      {#if nearbyLoading}
-        <span class="empty">Loading nearby stops…</span>
-      {:else if nearbyStops.length === 0}
-        <span class="empty">No nearby stops found.</span>
-      {:else}
-        {#each filteredNearby as stop (stop.stop_id)}
-          <button
-            type="button"
-            class="nearby-button"
-            class:active={selectedStopId === stop.stop_id}
-            data-nav
-            aria-pressed={selectedStopId === stop.stop_id}
-            onclick={() => onSelectNearby(stop)}
-          >
-            <span class="mode" aria-hidden="true">{transportIcon(stop.mode ?? null)}</span>
-            {stop.name}
-            <span class="distance">{formatDistance(stop.distance_m)}</span>
-          </button>
-        {/each}
-      {/if}
-    </div>
-  {/if}
 </section>
 
 <style>
@@ -324,48 +285,6 @@
     border-color: #7dd3fc;
     background: transparent;
     color: #bde9ff;
-  }
-
-  .nearby-row {
-    display: flex;
-    flex-basis: 100%;
-    gap: 8px;
-    min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .nearby-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nearby-button {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 8px;
-    min-height: 48px;
-    padding: 0 12px;
-    border: 1px solid #2d3a49;
-    border-radius: 999px;
-    background: #141b23;
-    color: var(--color-text);
-    font-size: 0.85rem;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .nearby-button.active {
-    border-color: var(--color-accent);
-    background: #123d25;
-    color: #d9ffe7;
-  }
-
-  .distance {
-    color: var(--color-muted);
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
   }
 
   .empty {

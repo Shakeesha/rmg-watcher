@@ -392,12 +392,9 @@
     <StopSelector
       {stops}
       {selectedStopId}
-      {nearbyStops}
       {nearbyOpen}
-      {nearbyLoading}
       onSelect={selectStop}
       onToggleNearby={() => void toggleNearby()}
-      onSelectNearby={(stop) => selectStop(stop.stop_id)}
       onLocate={locate}
       onSelectPlace={selectPlace}
     />
@@ -406,6 +403,7 @@
         stops={nearbyStops}
         center={mapCenter}
         {selectedStopId}
+        loading={nearbyLoading}
         onSelect={(stop) => selectStop(stop.stop_id)}
       />
     {/if}

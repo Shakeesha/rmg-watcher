@@ -70,3 +70,13 @@ export function transportLabel(mode: string | null): string {
   if (value.includes('ferry')) return 'Ferry'
   return 'Transit'
 }
+
+export function transportColor(mode: string | null): string {
+  const value = (mode ?? '').toLowerCase()
+  if (value.includes('bus') || value.includes('coach')) return '#8b5cf6'
+  if (value.includes('tram') || value.includes('light_rail')) return '#ef4444'
+  if (value.includes('rail') || value.includes('train')) return '#64748b'
+  if (value.includes('subway') || value.includes('metro')) return '#2563eb'
+  if (value.includes('ferry')) return '#0891b2'
+  return '#64748b'
+}
