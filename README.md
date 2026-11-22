@@ -6,7 +6,7 @@ and serves a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.15.1
+- **Version:** 0.16.0
 
 ## Status
 
@@ -73,12 +73,17 @@ mock data:
 
 3. Run `python -m transit_pipeline run` and serve the UI as above.
 
-The default watchlist is Darmstadt Hbf, Darmstadt Luisenplatz, and Babenhausen
-(Hess) Bahnhof. The full regional catalog is cached once per day under
-`data/transitous/`, but only the watched stops are refreshed automatically.
-Add more stop IDs to `TRANSITOUS_WATCH_STOPS` as needed — keep the list short to
-respect the Transitous usage policy. At the default 10-minute refresh interval,
-three stops generate roughly 432 API requests per day.
+No stops are polled by default. The regional catalog is cached once per day under
+`data/transitous/`, and the UI suggests up to three nearby stops from it. Add
+stop IDs to `TRANSITOUS_WATCH_STOPS` only if you want automatic background
+polling; keep the list short to respect the Transitous usage policy.
+
+Autocomplete uses a static catalog of German stops at `data/german-stops.json`.
+Generate it once with:
+
+```bash
+cd frontend && npm run build:stops && cd ..
+```
 
 In the kiosk UI, press **Nearby** in the stop bar to list stops within 1 km of
 the current stop and check their departures on demand. Those departures use the

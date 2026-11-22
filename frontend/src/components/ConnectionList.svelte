@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fetchPlaces } from '../lib/api'
+  import { fetchPlaces, resolvePlace } from '../lib/api'
   import type { Connection, FavouriteConnection, PlaceResult, Stop } from '../lib/types'
 
   interface Props {
@@ -91,16 +91,28 @@
     }
   })
 
-  function chooseFrom(place: PlaceResult): void {
-    fromStop = place.id
-    fromText = place.name
+  async function chooseFrom(place: PlaceResult): Promise<void> {
     fromSuggestions = []
+    let selected = place
+    try {
+      selected = (await resolvePlace(place.id)) ?? place
+    } catch {
+      selected = place
+    }
+    fromStop = selected.id
+    fromText = selected.name
   }
 
-  function chooseTo(place: PlaceResult): void {
-    toStop = place.id
-    toText = place.name
+  async function chooseTo(place: PlaceResult): Promise<void> {
     toSuggestions = []
+    let selected = place
+    try {
+      selected = (await resolvePlace(place.id)) ?? place
+    } catch {
+      selected = place
+    }
+    toStop = selected.id
+    toText = selected.name
   }
 
   $effect(() => {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fetchPlaces } from '../lib/api'
+  import { fetchPlaces, resolvePlace } from '../lib/api'
   import type { NearbyStop, PlaceResult, Stop } from '../lib/types'
 
   interface Props {
@@ -58,10 +58,16 @@
     }
   })
 
-  function choosePlace(place: PlaceResult): void {
+  async function choosePlace(place: PlaceResult): Promise<void> {
     query = ''
     suggestions = []
-    onSelectPlace(place)
+    let selected = place
+    try {
+      selected = (await resolvePlace(place.id)) ?? place
+    } catch {
+      selected = place
+    }
+    onSelectPlace(selected)
   }
 
   const filteredStops = $derived(

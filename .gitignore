@@ -24,6 +24,7 @@ data/*.db
 data/*.db-*
 data/*.sqlite3
 data/transitous/
+data/german-stops.json
 
 # Frontend
 frontend/node_modules/

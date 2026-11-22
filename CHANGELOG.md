@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-22
+
+### Added
+
+- Static German stop catalog at `data/german-stops.json` for offline autocomplete
+  and selection.
+- One-time `npm run build:stops` generator using DB HAFAS open data.
+- Place resolution that maps a static stop to its Transitous ID once and caches
+  the result.
+
+### Fixed
+
+- Geocoder type filter no longer uses the invalid `POI` value.
+
 ## [0.15.1] - 2026-11-22
 
 ### Fixed

@@ -302,31 +302,40 @@ class TransitousClient:
         self._write_cache(cache_path, alerts)
         return alerts
 
-    def search_places(self, text: str, *, limit: int | None = None) -> list[dict[str, Any]]:
+    def search_places(
+        self,
+        text: str,
+        *,
+        limit: int | None = None,
+        bias: tuple[float, float] | None = None,
+    ) -> list[dict[str, Any]]:
         """Return cached autocomplete results for stops and places in Germany."""
         query = text.strip()
         if len(query) < 2:
             return []
 
         count = limit or self._settings.transitous_geocode_limit
+        bias_key = "" if bias is None else f"{bias[0]:.4f},{bias[1]:.4f}"
         digest = hashlib.sha256(
-            f"{query.casefold()}|{count}".encode()
+            f"{query.casefold()}|{count}|{bias_key}".encode()
         ).hexdigest()[:20]
         cache_path = self._cache_dir / "geocode" / f"{digest}.json"
         cached = self._read_cache(cache_path, CATALOG_TTL_SECONDS)
         if cached is not None:
             return _records(cached)
 
+        params: dict[str, str | int | bool] = {
+            "text": query,
+            "numResults": count,
+            "language": "de",
+            "type": "STOP,ADDRESS,PLACE",
+        }
+        if bias is not None:
+            params["place"] = f"{bias[0]},{bias[1]}"
+            params["placeBias"] = 2
+
         try:
-            payload = self._get(
-                "/v1/geocode",
-                params={
-                    "text": query,
-                    "numResults": count,
-                    "language": "de",
-                    "type": "STOP,ADDRESS,POI",
-                },
-            )
+            payload = self._get("/v1/geocode", params=params)
         except ApiError:
             return []
 

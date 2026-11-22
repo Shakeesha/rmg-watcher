@@ -97,6 +97,10 @@ Transitous is a community service, so this client is deliberately quiet:
 - On open, the UI calls `/api/stops/suggested` and shows at most three nearby
   stops around `TRANSITOUS_HOME_LAT/LON`, or around the browser position after
   **Locate**. This is a local catalog lookup with no external request.
+- Autocomplete uses a static catalog of German stops at
+  `data/german-stops.json` (generated with `npm run build:stops`), so typing and
+  selection work without a live lookup. Selecting a stop resolves its Transitous
+  ID once through the cached geocoder.
 - The **Connections** view uses the resource-heavy `/v6/plan` endpoint. Results
   are cached for 30 minutes per from/to/time/arriveBy bucket, and a daily
   counter caps fresh plan requests at `TRANSITOUS_PLAN_LIMIT_PER_DAY` (30).

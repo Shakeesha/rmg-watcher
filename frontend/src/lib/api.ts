@@ -76,6 +76,13 @@ export function fetchSuggestedStops(
   return getJson<NearbyStop[]>(`/stops/suggested${suffix ? `?${suffix}` : ''}`, signal)
 }
 
+export function resolvePlace(id: string, signal?: AbortSignal): Promise<PlaceResult | null> {
+  return getJson<PlaceResult | null>(
+    `/places/resolve?id=${encodeURIComponent(id)}`,
+    signal,
+  )
+}
+
 export function fetchPlaces(
   query: string,
   signal?: AbortSignal,

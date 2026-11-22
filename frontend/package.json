@@ -1,12 +1,13 @@
 {
   "name": "transit-kiosk-frontend",
   "private": true,
-  "version": "0.15.1",
+  "version": "0.16.0",
   "description": "Small-screen kiosk UI for the transit telemetry device",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:stops": "node scripts/build-stop-catalog.mjs",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
   },
@@ -14,6 +15,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.19.2",
+    "db-hafas-stations": "^2.0.0",
     "svelte": "^5.57.3",
     "svelte-check": "^4.7.7",
     "typescript": "~6.0.3",

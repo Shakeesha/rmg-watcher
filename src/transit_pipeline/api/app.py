@@ -35,6 +35,7 @@ from transit_pipeline.ingestion.transitous import (
     load_cached_stops,
     normalize_stop_name,
 )
+from transit_pipeline.places import find_stop, load_stop_catalog, search_stops
 from transit_pipeline.storage.db import Database
 from transit_pipeline.storage.repository import TransitRepository
 from transit_pipeline.transform.deduplicator import deduplicate_departures
@@ -453,6 +454,13 @@ def create_app(
         tags=["stops"],
     )
     def places(q: str = Query(default="", min_length=2)) -> list[PlaceResponse]:
+        local = search_stops(
+            load_stop_catalog(app_settings.german_stops_path),
+            q,
+            app_settings.transitous_geocode_limit,
+        )
+        if local:
+            return [PlaceResponse(**place) for place in local]
         if app_settings.mock_mode or app_settings.transit_provider != "transitous":
             return []
         client = TransitousClient(app_settings)
@@ -462,6 +470,28 @@ def create_app(
             return []
         finally:
             client.close()
+
+    @app.get(
+        "/api/places/resolve",
+        response_model=PlaceResponse | None,
+        tags=["stops"],
+    )
+    def resolve_place(id: str = Query(min_length=1)) -> PlaceResponse | None:
+        stop = find_stop(load_stop_catalog(app_settings.german_stops_path), id)
+        if stop is None or app_settings.mock_mode:
+            return None
+        client = TransitousClient(app_settings)
+        try:
+            matches = client.search_places(
+                str(stop["name"]),
+                limit=1,
+                bias=(float(stop["latitude"]), float(stop["longitude"])),
+            )
+        except ApiError:
+            return None
+        finally:
+            client.close()
+        return PlaceResponse(**matches[0]) if matches else None
 
     @app.get(
         "/api/stops/nearby/{stop_id}",

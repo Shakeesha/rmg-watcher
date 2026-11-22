@@ -145,6 +145,10 @@ class Settings(BaseSettings):
         le=10,
         validation_alias="TRANSITOUS_GEOCODE_LIMIT",
     )
+    german_stops_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "german-stops.json",
+        validation_alias="GERMAN_STOPS_PATH",
+    )
     transitous_cache_path: Path = Field(
         default=PROJECT_ROOT / "data" / "transitous",
         validation_alias="TRANSITOUS_CACHE_PATH",
