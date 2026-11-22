@@ -407,6 +407,7 @@
         loading={connectionLoading}
         error={connectionError}
         {favourites}
+        {alerts}
         onSearch={(from, to, time, arriveBy) =>
           void searchConnections(from, to, time, arriveBy)}
         onSave={saveFavourite}

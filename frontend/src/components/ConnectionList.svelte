@@ -1,6 +1,12 @@
 <script lang="ts">
   import { fetchPlaces, resolvePlace } from '../lib/api'
-  import type { Connection, FavouriteConnection, PlaceResult, Stop } from '../lib/types'
+  import type {
+    Connection,
+    FavouriteConnection,
+    PlaceResult,
+    ServiceAlert,
+    Stop,
+  } from '../lib/types'
 
   interface Props {
     stops: Stop[]
@@ -9,6 +15,7 @@
     loading: boolean
     error: string | null
     favourites: FavouriteConnection[]
+    alerts: ServiceAlert[]
     onSearch: (from: string, to: string, time?: string, arriveBy?: boolean) => void
     onSave: (from: string, to: string, label: string) => void
     onSelectFavourite: (favourite: FavouriteConnection) => void
@@ -21,6 +28,7 @@
     loading,
     error,
     favourites,
+    alerts,
     onSearch,
     onSave,
     onSelectFavourite,
@@ -213,6 +221,15 @@
     return result
   }
 
+  function affectedAlert(connection: Connection): ServiceAlert | null {
+    const ids = new Set(
+      connection.legs
+        .map((leg) => leg.route_id)
+        .filter((id): id is string => id !== null),
+    )
+    return alerts.find((alert) => alert.routes.some((route) => ids.has(route))) ?? null
+  }
+
   function search(): void {
     if (!canSearch()) return
     onSearch(fromStop, toStop, travelTime || undefined, arriveBy)
@@ -395,6 +412,7 @@
     <ol class="connection-list">
       {#each connections as connection, index (index)}
         {@const tightTransfers = tightTransferMinutes(connection)}
+        {@const affected = affectedAlert(connection)}
         <li class="connection-row">
           <div class="connection-summary">
             <strong>
@@ -406,7 +424,11 @@
             </span>
           </div>
 
-          {#if tightTransfers.length > 0}
+          {#if affected}
+            <p class="transfer-warning disruption" role="status">
+              ⚠ Disruption: {affected.header}
+            </p>
+          {:else if tightTransfers.length > 0}
             <p class="transfer-warning" role="status">
               ⚠ Tight transfer: {Math.min(...tightTransfers)} min to change
             </p>
@@ -722,6 +744,11 @@
     color: #ffd58a;
     font-size: 0.78rem;
     font-weight: 700;
+  }
+
+  .transfer-warning.disruption {
+    background: #4b1616;
+    color: #ffb4b4;
   }
 
   .leg-detail {

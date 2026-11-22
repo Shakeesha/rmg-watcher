@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-22
+
+### Added
+
+- Connection warnings now consider service alerts affecting the journey routes.
+
 ## [0.16.2] - 2026-11-22
 
 ### Fixed

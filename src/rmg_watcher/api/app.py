@@ -283,6 +283,7 @@ def _connections(
             if not isinstance(origin, dict) or not isinstance(destination, dict):
                 continue
             mode = leg.get("mode")
+            route_id = leg.get("routeId")
             route = leg.get("routeShortName") or leg.get("displayName")
             color = leg.get("routeColor")
             operator = leg.get("agencyName")
@@ -316,6 +317,7 @@ def _connections(
             legs.append(
                 ConnectionLegResponse(
                     mode=str(mode).lower() if mode is not None else "transit",
+                    route_id=str(route_id) if isinstance(route_id, str) else None,
                     route=str(route) if route is not None else None,
                     route_color=str(color) if isinstance(color, str) else None,
                     headsign=str(headsign) if isinstance(headsign, str) else None,

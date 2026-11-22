@@ -93,6 +93,7 @@ class AlertResponse(BaseModel):
     description: str
     severity: str
     url: str | None = None
+    routes: list[str] = Field(default_factory=list)
     stop_id: str | None = None
 
 
@@ -109,6 +110,7 @@ class ConnectionLegResponse(BaseModel):
     """One leg of a planned connection."""
 
     mode: str
+    route_id: str | None = None
     route: str | None = None
     route_color: str | None = None
     headsign: str | None = None

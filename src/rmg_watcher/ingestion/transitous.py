@@ -277,30 +277,34 @@ class TransitousClient:
                 "language": "de",
             },
         )
-        alerts: list[dict[str, Any]] = []
-        seen: set[str] = set()
+        alerts: dict[str, dict[str, Any]] = {}
         stop_times = payload.get("stopTimes") if isinstance(payload, dict) else None
         for stop_time in _records(stop_times):
             place = stop_time.get("place")
             if not isinstance(place, dict):
                 continue
+            route_id = stop_time.get("routeId")
             for alert in _records(place.get("alerts")):
                 header = str(alert.get("headerText") or "")
                 code = str(alert.get("code") or header)
-                if code in seen:
-                    continue
-                seen.add(code)
-                alerts.append(
-                    {
+                existing = alerts.get(code)
+                if existing is None:
+                    existing = {
                         "code": code,
                         "header": header,
                         "description": str(alert.get("descriptionText") or ""),
                         "severity": str(alert.get("severityLevel") or "UNKNOWN"),
-                        "url": alert.get("url") if isinstance(alert.get("url"), str) else None,
+                        "url": (
+                            alert.get("url") if isinstance(alert.get("url"), str) else None
+                        ),
+                        "routes": [],
                     }
-                )
-        self._write_cache(cache_path, alerts)
-        return alerts
+                    alerts[code] = existing
+                if isinstance(route_id, str) and route_id not in existing["routes"]:
+                    existing["routes"].append(route_id)
+        result = list(alerts.values())
+        self._write_cache(cache_path, result)
+        return result
 
     def search_places(
         self,

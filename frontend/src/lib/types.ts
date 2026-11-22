@@ -76,6 +76,7 @@ export interface ConnectionStop {
 
 export interface ConnectionLeg {
   mode: string
+  route_id: string | null
   route: string | null
   route_color: string | null
   headsign: string | null
@@ -103,6 +104,7 @@ export interface ServiceAlert {
   description: string
   severity: string
   url: string | null
+  routes: string[]
   stop_id: string | null
 }
 
