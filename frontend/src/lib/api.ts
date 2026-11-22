@@ -111,7 +111,13 @@ export function fetchConnections(
     limit: String(limit),
     arrive_by: String(arriveBy),
   })
-  if (time) query.set('time', time)
+  if (time) {
+    const parsed = new Date(time)
+    query.set(
+      'time',
+      Number.isNaN(parsed.getTime()) ? time : parsed.toISOString(),
+    )
+  }
   return getJson<Connection[]>(`/connections?${query.toString()}`, signal)
 }
 

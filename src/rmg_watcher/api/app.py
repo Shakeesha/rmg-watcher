@@ -262,6 +262,9 @@ def _connections(
     if settings.mock_mode or settings.transit_provider != "transitous":
         return []
 
+    if time is not None and time.tzinfo is None:
+        time = time.replace(tzinfo=UTC)
+
     client = TransitousClient(settings)
     try:
         itineraries = client.search_connections(

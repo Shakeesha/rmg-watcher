@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-11-22
+
+### Fixed
+
+- Autocomplete suggestions close completely after a selection.
+- Connection searches send a timezone-aware timestamp, fixing `400/502`
+  errors from the date/time picker.
+
 ## [0.17.0] - 2026-11-22
 
 ### Added

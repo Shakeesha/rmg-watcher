@@ -263,7 +263,7 @@
         oninput={() => (fromSelectedText = '')}
         data-nav
       />
-      {#if fromText.trim().length >= 2 && fromText !== fromStop}
+      {#if fromText.trim().length >= 2 && fromText !== fromSelectedText}
         <div class="suggestions" role="listbox" aria-label="From suggestions">
           {#if fromLoading}
             <p class="empty">Searching…</p>
@@ -296,7 +296,7 @@
         oninput={() => (toSelectedText = '')}
         data-nav
       />
-      {#if toText.trim().length >= 2 && toText !== toStop}
+      {#if toText.trim().length >= 2 && toText !== toSelectedText}
         <div class="suggestions" role="listbox" aria-label="To suggestions">
           {#if toLoading}
             <p class="empty">Searching…</p>
