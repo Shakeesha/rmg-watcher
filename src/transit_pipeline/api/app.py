@@ -356,13 +356,18 @@ def _alerts(
     try:
         result: list[AlertResponse] = []
         seen: set[str] = set()
-        for stop_id in stop_ids[: settings.transitous_alert_stops]:
-            for alert in client.fetch_alerts(stop_id):
-                key = f"{stop_id}:{alert.get('code')}"
-                if key in seen:
-                    continue
-                seen.add(key)
-                result.append(AlertResponse(stop_id=stop_id, **alert))
+        try:
+            for stop_id in stop_ids[: settings.transitous_alert_stops]:
+                for alert in client.fetch_alerts(stop_id):
+                    key = f"{stop_id}:{alert.get('code')}"
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    result.append(AlertResponse(stop_id=stop_id, **alert))
+        except ApiError:
+            # Alerts are non-critical; a transient upstream failure should not
+            # break the kiosk or surface a raw 502 to the user.
+            return []
         return result
     finally:
         client.close()

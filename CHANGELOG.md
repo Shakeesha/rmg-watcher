@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-22
+
+### Fixed
+
+- Service alerts now degrade to an empty list instead of showing a raw API 502.
+
 ## [0.13.0] - 2026-11-22
 
 ### Added
