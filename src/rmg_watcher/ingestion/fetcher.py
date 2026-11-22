@@ -13,6 +13,7 @@ import httpx
 
 from rmg_watcher import __version__
 from rmg_watcher.config import PROJECT_ROOT, Settings
+from rmg_watcher.constants import STOP_CATALOG_FILE
 from rmg_watcher.domain.exceptions import ApiError
 from rmg_watcher.ingestion.retries import RetryPolicy, request_with_retries
 from rmg_watcher.ingestion.transitous import TransitousClient
@@ -48,9 +49,9 @@ class MockTransitClient:
         self.fixtures_dir = fixtures_dir or FIXTURES_DIR
 
     def fetch_stops(self) -> RawPayload:
-        payload = _read_json(self.fixtures_dir / "stops.json")
+        payload = _read_json(self.fixtures_dir / STOP_CATALOG_FILE)
         if not isinstance(payload, list):
-            raise ApiError("stops.json must contain a JSON array")
+            raise ApiError(f"{STOP_CATALOG_FILE} must contain a JSON array")
         return [record for record in payload if isinstance(record, dict)]
 
     def fetch_departures(self, stop_id: str) -> RawPayload:

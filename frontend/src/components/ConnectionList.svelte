@@ -2,6 +2,7 @@
   import { fetchPlaces, resolvePlace } from '../lib/api'
   import {
     AUTOCOMPLETE_DEBOUNCE_MS,
+    FAVOURITE_LABEL_SEPARATOR,
     QUICK_OFFSET_FIFTEEN_MIN,
     QUICK_OFFSET_ONE_HOUR_MIN,
   } from '../lib/constants'
@@ -251,7 +252,7 @@
     onSave(
       fromStop,
       toStop,
-      `${fromSelectedText || fromStop} → ${toSelectedText || toStop}`,
+      `${fromSelectedText || fromStop}${FAVOURITE_LABEL_SEPARATOR}${toSelectedText || toStop}`,
     )
   }
 </script>
@@ -419,7 +420,7 @@
           onclick={() => {
             fromStop = favourite.from
             toStop = favourite.to
-            const parts = favourite.label.split(' → ')
+            const parts = favourite.label.split(FAVOURITE_LABEL_SEPARATOR)
             fromText = parts[0] ?? favourite.from
             toText = parts[1] ?? favourite.to
             fromSelectedText = fromText

@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
@@ -39,15 +39,21 @@ from rmg_watcher.constants import (
     MIN_NEARBY_RADIUS_M,
     MIN_SUGGESTED_RADIUS_M,
     SECONDS_PER_MINUTE,
+    STOP_CATALOG_FILE,
 )
 from rmg_watcher.domain.exceptions import ApiError
 from rmg_watcher.ingestion.transitous import (
     TransitousClient,
+    cached_stop_index,
     distance_meters,
     load_cached_stops,
-    normalize_stop_name,
 )
-from rmg_watcher.places import find_stop, load_stop_catalog, search_stops
+from rmg_watcher.places import (
+    find_stop,
+    load_stop_catalog,
+    search_stops,
+    stop_name_key,
+)
 from rmg_watcher.storage.db import Database
 from rmg_watcher.storage.repository import TransitRepository
 from rmg_watcher.transform.deduplicator import deduplicate_departures
@@ -85,7 +91,14 @@ def _stop_mode(item: dict[str, object]) -> str | None:
 
 
 def _catalog_stops(settings: Settings) -> list[dict[str, object]]:
-    return load_cached_stops(settings.transitous_cache_path / "stops.json")
+    return load_cached_stops(settings.transitous_cache_path / STOP_CATALOG_FILE)
+
+
+def _catalog_stop(
+    settings: Settings,
+    stop_id: str,
+) -> dict[str, object] | None:
+    return cached_stop_index(settings.transitous_cache_path / STOP_CATALOG_FILE).get(stop_id)
 
 
 def _stop_location(
@@ -96,9 +109,8 @@ def _stop_location(
     stop = repo.get_stop(stop_id)
     if stop is not None and stop.latitude is not None and stop.longitude is not None:
         return stop.latitude, stop.longitude
-    for item in _catalog_stops(settings):
-        if item.get("stopId") != stop_id:
-            continue
+    item = _catalog_stop(settings, stop_id)
+    if item is not None:
         lat, lon = item.get("latitude"), item.get("longitude")
         if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
             return float(lat), float(lon)
@@ -121,7 +133,7 @@ def _suggested_stops(
             continue
         if not isinstance(lon, (int, float)):
             continue
-        key = normalize_stop_name(name)
+        key = stop_name_key(name)
         if key in seen:
             continue
         distance = distance_meters(latitude, longitude, float(lat), float(lon))
@@ -149,9 +161,9 @@ def _stop_name(stop_id: str, repo: TransitRepository, settings: Settings) -> str
     stop = repo.get_stop(stop_id)
     if stop is not None:
         return stop.name
-    for item in _catalog_stops(settings):
-        if item.get("stopId") == stop_id and isinstance(item.get("name"), str):
-            return str(item["name"])
+    item = _catalog_stop(settings, stop_id)
+    if item is not None and isinstance(item.get("name"), str):
+        return str(item["name"])
     return stop_id
 
 
@@ -195,7 +207,7 @@ def _nearby_stops(
         )
         if distance > settings.transitous_nearby_radius_m:
             continue
-        name_key = normalize_stop_name(name)
+        name_key = stop_name_key(name)
         if name_key in seen and seen[name_key] <= distance:
             continue
         seen[name_key] = distance
@@ -264,6 +276,55 @@ def _live_departures(
     return result
 
 
+def _connection_leg(
+    leg: dict[str, Any],
+    itinerary: dict[str, Any],
+) -> ConnectionLegResponse | None:
+    origin, destination = leg.get("from"), leg.get("to")
+    if not isinstance(origin, dict) or not isinstance(destination, dict):
+        return None
+
+    intermediates: list[ConnectionStopResponse] = []
+    raw_stops = leg.get("intermediateStops")
+    if isinstance(raw_stops, list):
+        for stop in raw_stops:
+            if not isinstance(stop, dict):
+                continue
+            intermediates.append(
+                ConnectionStopResponse(
+                    name=str(stop.get("name") or ""),
+                    arrival=_as_datetime(stop["arrival"]) if stop.get("arrival") else None,
+                    departure=(
+                        _as_datetime(stop["departure"]) if stop.get("departure") else None
+                    ),
+                    platform=str(stop["track"]) if stop.get("track") else None,
+                )
+            )
+
+    mode = leg.get("mode")
+    route_id = leg.get("routeId")
+    route = leg.get("routeShortName") or leg.get("displayName")
+    color = leg.get("routeColor")
+    operator = leg.get("agencyName")
+    headsign = leg.get("headsign")
+
+    return ConnectionLegResponse(
+        mode=str(mode).lower() if mode is not None else "transit",
+        route_id=str(route_id) if isinstance(route_id, str) else None,
+        route=str(route) if route is not None else None,
+        route_color=str(color) if isinstance(color, str) else None,
+        headsign=str(headsign) if isinstance(headsign, str) else None,
+        operator=str(operator) if isinstance(operator, str) else None,
+        from_name=str(origin.get("name") or ""),
+        to_name=str(destination.get("name") or ""),
+        from_platform=str(origin["track"]) if origin.get("track") else None,
+        to_platform=str(destination["track"]) if destination.get("track") else None,
+        departure=_as_datetime(leg.get("startTime") or itinerary.get("startTime")),
+        arrival=_as_datetime(leg.get("endTime") or itinerary.get("endTime")),
+        intermediate_stops=intermediates,
+    )
+
+
 def _connections(
     from_stop: str,
     to_stop: str,
@@ -296,64 +357,9 @@ def _connections(
         for leg in itinerary.get("legs", []):
             if not isinstance(leg, dict):
                 continue
-            origin, destination = leg.get("from"), leg.get("to")
-            if not isinstance(origin, dict) or not isinstance(destination, dict):
-                continue
-            mode = leg.get("mode")
-            route_id = leg.get("routeId")
-            route = leg.get("routeShortName") or leg.get("displayName")
-            color = leg.get("routeColor")
-            operator = leg.get("agencyName")
-            headsign = leg.get("headsign")
-
-            intermediates: list[ConnectionStopResponse] = []
-            raw_stops = leg.get("intermediateStops")
-            if isinstance(raw_stops, list):
-                for stop in raw_stops:
-                    if not isinstance(stop, dict):
-                        continue
-                    intermediates.append(
-                        ConnectionStopResponse(
-                            name=str(stop.get("name") or ""),
-                            arrival=(
-                                _as_datetime(stop["arrival"])
-                                if stop.get("arrival")
-                                else None
-                            ),
-                            departure=(
-                                _as_datetime(stop["departure"])
-                                if stop.get("departure")
-                                else None
-                            ),
-                            platform=(
-                                str(stop["track"]) if stop.get("track") else None
-                            ),
-                        )
-                    )
-
-            legs.append(
-                ConnectionLegResponse(
-                    mode=str(mode).lower() if mode is not None else "transit",
-                    route_id=str(route_id) if isinstance(route_id, str) else None,
-                    route=str(route) if route is not None else None,
-                    route_color=str(color) if isinstance(color, str) else None,
-                    headsign=str(headsign) if isinstance(headsign, str) else None,
-                    operator=str(operator) if isinstance(operator, str) else None,
-                    from_name=str(origin.get("name") or ""),
-                    to_name=str(destination.get("name") or ""),
-                    from_platform=(
-                        str(origin["track"]) if origin.get("track") else None
-                    ),
-                    to_platform=(
-                        str(destination["track"]) if destination.get("track") else None
-                    ),
-                    departure=_as_datetime(
-                        leg.get("startTime") or itinerary.get("startTime")
-                    ),
-                    arrival=_as_datetime(leg.get("endTime") or itinerary.get("endTime")),
-                    intermediate_stops=intermediates,
-                )
-            )
+            parsed = _connection_leg(leg, itinerary)
+            if parsed is not None:
+                legs.append(parsed)
         result.append(
             ConnectionResponse(
                 departure=_as_datetime(itinerary.get("startTime")),
@@ -628,8 +634,7 @@ def create_app(
 
     @app.get("/api/metrics", response_model=MetricsResponse, tags=["metrics"])
     def metrics(repo: RepositoryDep) -> MetricsResponse:
-        summary = repo.metrics_summary()
-        risks = repo.transfer_risks()
+        summary, risks = repo.metrics_and_risks()
         return MetricsResponse(
             total_events=summary.total_events,
             punctuality_rate=summary.punctuality_rate,

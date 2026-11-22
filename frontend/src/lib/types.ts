@@ -23,7 +23,6 @@ export interface Stop {
 
 export interface NearbyStop extends Stop {
   distance_m: number | null
-  mode: string | null
 }
 
 export interface Departure {

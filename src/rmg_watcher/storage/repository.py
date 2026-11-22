@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -16,6 +15,7 @@ from rmg_watcher.domain.models import (
     Stop,
     TripStatus,
 )
+from rmg_watcher.places import stop_name_key
 from rmg_watcher.storage.db import Database
 from rmg_watcher.transform.metrics import (
     MetricsSummary,
@@ -260,7 +260,7 @@ class TransitRepository:
         seen: set[str] = set()
         unique: list[Stop] = []
         for stop in stops:
-            key = re.sub(r"[^a-z0-9]", "", stop.name.casefold())
+            key = stop_name_key(stop.name)
             if key in seen:
                 continue
             seen.add(key)
@@ -392,6 +392,28 @@ class TransitRepository:
             )
             for risk in assess_transfer_risks(self.list_events(limit=limit))
         ]
+
+    def metrics_and_risks(
+        self,
+        *,
+        limit: int = 5_000,
+    ) -> tuple[MetricsSummary, list[TransferRisk]]:
+        """Compute metrics and transfer risks from one event query."""
+        events = self.list_events(limit=limit)
+        route_names = self._route_names()
+        stop_names = self._stop_names()
+
+        summary = replace(summarize_metrics(events), route_names=route_names)
+        risks = [
+            replace(
+                risk,
+                inbound_route_name=route_names.get(risk.inbound_route_id),
+                outbound_route_name=route_names.get(risk.outbound_route_id),
+                stop_name=stop_names.get(risk.stop_id),
+            )
+            for risk in assess_transfer_risks(events)
+        ]
+        return summary, risks
 
     def count_events(self) -> int:
         with self.database.session() as connection:

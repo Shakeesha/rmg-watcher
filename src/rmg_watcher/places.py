@@ -28,6 +28,11 @@ def find_stop(catalog: tuple[dict[str, Any], ...], stop_id: str) -> dict[str, An
     return None
 
 
+def stop_name_key(name: str) -> str:
+    """Return a comparable key for stop names, ignoring punctuation and case."""
+    return re.sub(r"[^a-z0-9]", "", name.casefold())
+
+
 def _normalise(value: str) -> str:
     return " ".join(re.sub(r"[^a-z0-9]", " ", value.casefold()).split())
 

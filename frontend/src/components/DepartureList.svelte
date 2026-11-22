@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Departure } from '../lib/types'
-  import { MILLISECONDS_PER_MINUTE, SECONDS_PER_MINUTE } from '../lib/constants'
+  import { MILLISECONDS_PER_MINUTE, SECONDS_PER_MINUTE, STATUS_CANCELLED } from '../lib/constants'
   import {
     formatClockTime,
     transportIcon,
@@ -26,7 +26,7 @@
   )
 
   function delayText(departure: Departure): string {
-    if (departure.status === 'cancelled') return 'Cancelled'
+    if (departure.status === STATUS_CANCELLED) return 'Cancelled'
     if (departure.delay_seconds === null) return 'No estimate'
     if (Math.abs(departure.delay_seconds) <= SECONDS_PER_MINUTE) return 'On time'
     const minutes = Math.round(
@@ -36,7 +36,7 @@
   }
 
   function relativeText(departure: Departure): string {
-    if (departure.status === 'cancelled') return 'Cancelled'
+    if (departure.status === STATUS_CANCELLED) return 'Cancelled'
     const target = new Date(departure.expected_time ?? departure.scheduled_time)
     if (Number.isNaN(target.getTime())) return '—'
     const minutes = Math.ceil((target.getTime() - Date.now()) / MILLISECONDS_PER_MINUTE)
@@ -45,7 +45,7 @@
   }
 
   function categoryClass(departure: Departure): string {
-    return departure.status === 'cancelled' ? 'cancelled' : departure.delay_category
+    return departure.status === STATUS_CANCELLED ? 'cancelled' : departure.delay_category
   }
 
 </script>
@@ -98,7 +98,7 @@
   {:else}
     <ol class="rows">
       {#each visible as departure (departure.trip_id)}
-        <li class="departure-row" class:cancelled={departure.status === 'cancelled'}>
+        <li class="departure-row" class:cancelled={departure.status === STATUS_CANCELLED}>
           <span
             class="mode-icon"
             role="img"

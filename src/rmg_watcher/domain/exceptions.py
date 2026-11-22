@@ -1,4 +1,4 @@
-"""Custom errors: ApiError, ValidationError, StorageError."""
+"""Custom errors: ApiError, StorageError."""
 
 from __future__ import annotations
 
@@ -9,10 +9,6 @@ class TransitError(Exception):
 
 class ApiError(TransitError):
     """Raised when a transit API request cannot be completed."""
-
-
-class ValidationError(TransitError):
-    """Raised when a payload cannot be validated."""
 
 
 class StorageError(TransitError):

@@ -12,10 +12,9 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
-import time
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Self
 
@@ -30,14 +29,18 @@ from rmg_watcher.constants import (
     DEFAULT_MAX_TRANSFERS,
     DEFAULT_SEARCH_WINDOW_SECONDS,
     DIGEST_LENGTH,
+    LANGUAGE,
     MINUTES_PER_HOUR,
     SECONDS_PER_MINUTE,
+    STOP_CATALOG_FILE,
 )
 from rmg_watcher.domain.exceptions import ApiError
+from rmg_watcher.ingestion.retries import RetryPolicy, request_with_retries
+from rmg_watcher.places import stop_name_key
 
 CATALOG_TTL_SECONDS = 24 * MINUTES_PER_HOUR * SECONDS_PER_MINUTE
 REQUEST_TIMEOUT_SECONDS = 10.0
-RETRY_STATUSES = {429, 500, 502, 503, 504}
+TRANSITOUS_RETRY_POLICY = RetryPolicy(max_attempts=2, base_delay=1.0, max_delay=1.0)
 
 
 def _records(value: object) -> list[dict[str, Any]]:
@@ -60,6 +63,16 @@ def distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
     return int(2 * radius * math.asin(math.sqrt(h)))
 
 
+@lru_cache(maxsize=2)
+def cached_stop_index(cache_path: Path) -> dict[str, dict[str, Any]]:
+    """Return the regional catalog indexed by stop ID."""
+    return {
+        str(stop["stopId"]): stop
+        for stop in load_cached_stops(cache_path)
+        if stop.get("stopId")
+    }
+
+
 def _prefer_stop(candidate: dict[str, Any], existing: dict[str, Any]) -> bool:
     """Prefer parent stop IDs over platform-level IDs."""
     candidate_id = str(candidate["stopId"])
@@ -69,13 +82,9 @@ def _prefer_stop(candidate: dict[str, Any], existing: dict[str, Any]) -> bool:
     return candidate_id.count(":") < existing_id.count(":")
 
 
-def normalize_stop_name(name: str) -> str:
-    """Normalise a stop name so platform variants collapse to one entry."""
-    return re.sub(r"[^a-z0-9]", "", name.casefold())
-
-
+@lru_cache(maxsize=2)
 def load_cached_stops(cache_path: Path) -> list[dict[str, Any]]:
-    """Read the cached stop catalog without making an API request."""
+    """Read and cache the regional stop catalog without an API call."""
     try:
         document = json.loads(cache_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -107,6 +116,7 @@ class TransitousClient:
             base_url = f"{base_url}/api"
 
         self._settings = settings
+        self._base_url = base_url
         self._now = now or (lambda: datetime.now(UTC))
         self._owns_client = client is None
         self._client = client or httpx.Client(
@@ -150,7 +160,7 @@ class TransitousClient:
 
     def _fetch_catalog(self) -> list[dict[str, Any]]:
         """Download and cache the deduplicated stop catalog for the area."""
-        cache_path = self._cache_dir / "stops.json"
+        cache_path = self._cache_dir / STOP_CATALOG_FILE
         cached = self._read_cache(cache_path, CATALOG_TTL_SECONDS)
         if cached is not None:
             return _records(cached)
@@ -182,7 +192,7 @@ class TransitousClient:
                 "longitude": float(lon),
             }
             key = (
-                normalize_stop_name(name),
+                stop_name_key(name),
                 round(float(lat), 2),
                 round(float(lon), 2),
             )
@@ -215,7 +225,7 @@ class TransitousClient:
                     "n": self._settings.transitous_departure_limit,
                     "arriveBy": arrive_by,
                     "realtimeMode": "REALTIME",
-                    "language": "de",
+                    "language": LANGUAGE,
                 },
             )
         except ApiError:
@@ -234,45 +244,6 @@ class TransitousClient:
         self._write_cache(cache_path, result)
         return result
 
-    def suggested_stops(
-        self,
-        latitude: float,
-        longitude: float,
-        radius_m: int,
-        limit: int,
-    ) -> list[dict[str, Any]]:
-        """Return nearby stops from the cached catalog without an API call."""
-        candidates: list[tuple[int, dict[str, Any]]] = []
-        seen: set[str] = set()
-        for item in self._fetch_catalog():
-            stop_id, name = item.get("stopId"), item.get("name")
-            lat, lon = item.get("latitude"), item.get("longitude")
-            if not isinstance(stop_id, str) or not isinstance(name, str):
-                continue
-            if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
-                continue
-            distance = distance_meters(latitude, longitude, float(lat), float(lon))
-            if distance > radius_m:
-                continue
-            key = normalize_stop_name(name)
-            if key in seen:
-                continue
-            seen.add(key)
-            candidates.append(
-                (
-                    distance,
-                    {
-                        "stopId": stop_id,
-                        "name": name,
-                        "latitude": float(lat),
-                        "longitude": float(lon),
-                        "distance_m": distance,
-                    },
-                )
-            )
-        candidates.sort(key=lambda entry: entry[0])
-        return [stop for _, stop in candidates[:limit]]
-
     def fetch_alerts(self, stop_id: str) -> list[dict[str, Any]]:
         """Return cached service alerts attached to a stop's next departures."""
         digest = hashlib.sha256(stop_id.encode("utf-8")).hexdigest()[:DIGEST_LENGTH]
@@ -290,7 +261,7 @@ class TransitousClient:
                 "stopId": stop_id,
                 "n": DEFAULT_ALERT_STOP_TIMES,
                 "withAlerts": True,
-                "language": "de",
+                "language": LANGUAGE,
             },
         )
         alerts: dict[str, dict[str, Any]] = {}
@@ -347,7 +318,7 @@ class TransitousClient:
         params: dict[str, str | int | bool] = {
             "text": query,
             "numResults": count,
-            "language": "de",
+            "language": LANGUAGE,
             "type": "STOP,ADDRESS,PLACE",
         }
         if bias is not None:
@@ -423,7 +394,7 @@ class TransitousClient:
                 "detailedLegs": False,
                 "withFares": False,
                 "realtimeMode": "REALTIME",
-                "language": "de",
+                "language": LANGUAGE,
             },
         )
         if not isinstance(payload, dict):
@@ -459,30 +430,21 @@ class TransitousClient:
         )
 
     def _get(self, path: str, *, params: dict[str, str | int | bool]) -> object:
-        for attempt in range(2):
-            try:
-                response = self._client.get(path, params=params)
-                if attempt == 0 and response.status_code in RETRY_STATUSES:
-                    time.sleep(1.0)
-                    continue
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                if (
-                    attempt == 0
-                    and exc.response.status_code in RETRY_STATUSES
-                ):
-                    time.sleep(1.0)
-                    continue
-                raise ApiError(f"Transitous request to {path} failed: {exc}") from exc
-            except httpx.HTTPError as exc:
-                raise ApiError(f"Transitous request to {path} failed: {exc}") from exc
+        url = f"{self._base_url}{path}"
+        try:
+            response = request_with_retries(
+                self._client,
+                url,
+                policy=TRANSITOUS_RETRY_POLICY,
+                params=params,
+            )
+        except ApiError as exc:
+            raise ApiError(f"Transitous request to {path} failed: {exc}") from exc
 
-            try:
-                return response.json()
-            except ValueError as exc:
-                raise ApiError(f"Invalid JSON returned by {path}") from exc
-
-        raise ApiError(f"Transitous request to {path} failed after retry")
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise ApiError(f"Invalid JSON returned by {path}") from exc
 
     def _map_stop_time(
         self,

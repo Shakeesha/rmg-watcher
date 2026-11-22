@@ -1,4 +1,4 @@
-"""Core domain models: Stop, Route, TripUpdate, DelayEvent."""
+"""Core domain models: Stop, Route, DelayEvent."""
 
 from __future__ import annotations
 
@@ -44,18 +44,6 @@ class Route:
     short_name: str
     long_name: str | None = None
     mode: str = "unknown"
-
-
-@dataclass(frozen=True, slots=True)
-class TripUpdate:
-    """A scheduled departure and its expected time."""
-
-    trip_id: str
-    route_id: str
-    stop_id: str
-    scheduled_time: datetime
-    expected_time: datetime | None = None
-    status: TripStatus = TripStatus.UNKNOWN
 
 
 @dataclass(frozen=True, slots=True)

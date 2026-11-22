@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-11-22
+
+### Changed
+
+- Cache and index the regional stop catalog, reuse one event query for metrics,
+  and consolidate retry logic and repeated literals.
+- Remove unused domain types and duplicated stop-name normalization.
+
 ## [0.18.1] - 2026-11-22
 
 ### Changed
