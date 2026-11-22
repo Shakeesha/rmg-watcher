@@ -20,10 +20,11 @@ so the Pi needs no Node.js runtime after deployment.
 
 | View | Content |
 | --- | --- |
-| Live | Next departures for the selected stop with expected time, scheduled time, countdown, and delay badge. |
+| Live | Search, suggested stops, a local schematic map, transport icons, and a departures/arrivals toggle with delay badges. |
 | Delays | Punctuality, median delay, 95th-percentile delay, and the most delayed lines. |
 | Transfers | Connection pairs ranked by projected slack, with at-risk connections highlighted. |
-| Connections | User-initiated journey planning between two stops, with cached results. |
+| Connections | From/To swap, date/time or quick chips, favourites, route bars, and expandable intermediate stops with platforms. |
+| Alerts | Cached service alerts for nearby stops. |
 
 ## Touch targets and focus
 

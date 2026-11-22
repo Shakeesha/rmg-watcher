@@ -25,20 +25,26 @@ policy.
 - AirLiner airport connection and regional tram extensions.
 - Construction/project notices.
 
-## Proposed features
+## Implemented
+
+- Nearby stop search, mode icons, and a local schematic map without tiles
+- Departures/Arrivals toggle via MOTIS `arriveBy`
+- Favourite connections with one-tap replay
+- Date/time picker with departure/arrival mode and quick chips
+- Route bars, platforms, operator, and expandable intermediate stops
+- Service alerts from cached MOTIS stop-time alerts
+
+## Remaining features
 
 | Priority | Feature | Notes |
 | --- | --- | --- |
-| 1 | **Service alerts view** | Reuse HEAG's "Aktuelle Meldungen" with line/date filters. Cache once per hour; render as a compact list in a new view. |
-| 1 | **Platform/track display** | MOTIS `place.track` already exists in stoptimes; show it beside each departure. |
-| 1 | **Favourite connections** | Store from/to pairs in local storage; one tap re-runs a cached connection search. |
-| 2 | **Date/time picker for connections** | Add "depart at" input instead of always searching from now. Reuse the 15-minute cache bucket. |
 | 2 | **Disruption-aware transfer risk** | Join service alerts to affected route IDs before scoring transfer slack. |
-| 2 | **Vehicle position map** | Use `GET /api/v6/map/trips` for the bounding box; cache frames every 60 s. Heavy — coordinate with Transitous first. |
-| 3 | **Accessibility filter** | Surface `wheelchairAccessible` and `bikesAllowed` from MOTIS stop times. |
-| 3 | **Offline timetable cache** | Store static GTFS for the watched stops so the UI still shows scheduled times during outages. |
-| 3 | **Ticket link-out** | Deep-link to DB/HEAG ticket apps; do not handle payments on the kiosk. |
+| 3 | **Accessibility filter** | Surface `wheelchairAccessible` from MOTIS stop times. |
+| 3 | **Offline timetable cache** | Store static GTFS for suggested stops so scheduled times survive outages. |
 | 4 | **Push-style alerts** | Promote cancellations and severe delays into the status banner. |
+
+Out of scope: ticket purchase, account login, personal profiles, bike/scooter
+booking, and external map tiles.
 
 ## Constraints
 
