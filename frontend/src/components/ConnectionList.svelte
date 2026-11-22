@@ -5,6 +5,7 @@
     QUICK_OFFSET_FIFTEEN_MIN,
     QUICK_OFFSET_ONE_HOUR_MIN,
   } from '../lib/constants'
+  import { formatClockTime, routeLabel } from '../lib/format'
   import type {
     Connection,
     FavouriteConnection,
@@ -159,24 +160,6 @@
       }
     }
   })
-
-  const timeFormatter = new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-
-  function formatTime(value: string): string {
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return timeFormatter.format(date)
-  }
-
-  function routeLabel(route: string | null, mode: string): string {
-    if (!route) return mode === 'walk' ? 'Walk' : mode.toUpperCase()
-    if (!route.includes(':')) return route
-    return route.split(':').at(-1)?.replace(/^_+/, '') || mode.toUpperCase()
-  }
 
   function canSearch(): boolean {
     return (
@@ -472,7 +455,7 @@
         <li class="connection-row">
           <div class="connection-summary">
             <strong>
-              {formatTime(connection.departure)} → {formatTime(connection.arrival)}
+              {formatClockTime(connection.departure)} → {formatClockTime(connection.arrival)}
             </strong>
             <span>
               {connection.duration_minutes} min ·
@@ -504,7 +487,7 @@
                     {leg.to_name}{leg.to_platform ? ` (${leg.to_platform})` : ''}
                   </span>
                   <span class="leg-time">
-                    {formatTime(leg.departure)}–{formatTime(leg.arrival)}
+                    {formatClockTime(leg.departure)}–{formatClockTime(leg.arrival)}
                   </span>
                 </div>
 
@@ -529,7 +512,7 @@
                     <ol class="intermediate">
                       {#each leg.intermediate_stops as stop, stopIndex (stopIndex)}
                         <li>
-                          <span>{formatTime(stop.departure ?? stop.arrival ?? '')}</span>
+                          <span>{formatClockTime(stop.departure ?? stop.arrival ?? '')}</span>
                           <span>{stop.name}</span>
                           {#if stop.platform}
                             <span class="platform">{stop.platform}</span>
@@ -558,7 +541,7 @@
           >
             <div class="card-top">
               <strong>
-                {formatTime(connection.departure)} → {formatTime(connection.arrival)}
+                {formatClockTime(connection.departure)} → {formatClockTime(connection.arrival)}
               </strong>
               <span>
                 {connection.duration_minutes} min ·

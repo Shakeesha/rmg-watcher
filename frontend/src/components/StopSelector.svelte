@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fetchPlaces, resolvePlace } from '../lib/api'
-  import { AUTOCOMPLETE_DEBOUNCE_MS, METRES_PER_KILOMETRE } from '../lib/constants'
+  import { AUTOCOMPLETE_DEBOUNCE_MS } from '../lib/constants'
+  import { formatDistance, transportIcon } from '../lib/format'
   import type { NearbyStop, PlaceResult, Stop } from '../lib/types'
 
   interface Props {
@@ -85,19 +86,6 @@
         ),
   )
 
-  function modeIcon(mode: string | null): string {
-    const value = (mode ?? '').toLowerCase()
-    if (value.includes('bus') || value.includes('coach')) return '🚌'
-    if (value.includes('tram') || value.includes('light_rail')) return '🚊'
-    if (value.includes('rail') || value.includes('train')) return '🚆'
-    return '•'
-  }
-
-  function distanceLabel(metres: number | null): string {
-    if (metres === null) return ''
-    if (metres < METRES_PER_KILOMETRE) return `${metres} m`
-    return `${(metres / METRES_PER_KILOMETRE).toFixed(1)} km`
-  }
 </script>
 
 <section class="stop-selector" aria-label="Choose a stop">
@@ -127,7 +115,7 @@
               data-nav
               onclick={() => choosePlace(place)}
             >
-              <span class="mode" aria-hidden="true">{modeIcon(place.mode)}</span>
+              <span class="mode" aria-hidden="true">{transportIcon(place.mode)}</span>
               <span class="suggestion-name">{place.name}</span>
               <span class="suggestion-type">{place.type}</span>
             </button>
@@ -147,7 +135,7 @@
         aria-pressed={selectedStopId === stop.stop_id}
         onclick={() => onSelect(stop.stop_id)}
       >
-        <span class="mode" aria-hidden="true">{modeIcon(stop.mode ?? null)}</span>
+        <span class="mode" aria-hidden="true">{transportIcon(stop.mode ?? null)}</span>
         {stop.name}
       </button>
     {:else}
@@ -186,9 +174,9 @@
             aria-pressed={selectedStopId === stop.stop_id}
             onclick={() => onSelectNearby(stop)}
           >
-            <span class="mode" aria-hidden="true">{modeIcon(stop.mode ?? null)}</span>
+            <span class="mode" aria-hidden="true">{transportIcon(stop.mode ?? null)}</span>
             {stop.name}
-            <span class="distance">{distanceLabel(stop.distance_m)}</span>
+            <span class="distance">{formatDistance(stop.distance_m)}</span>
           </button>
         {/each}
       {/if}

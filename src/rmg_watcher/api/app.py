@@ -65,12 +65,13 @@ RepositoryDep = Annotated[TransitRepository, Depends(get_repository)]
 
 
 def _as_datetime(value: object) -> datetime:
-    if isinstance(value, str):
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            pass
-    return datetime.now(UTC)
+    fallback = datetime.now(UTC)
+    if not isinstance(value, str) or not value:
+        return fallback
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return fallback
 
 
 def _stop_mode(item: dict[str, object]) -> str | None:

@@ -157,6 +157,7 @@ def load(
             repository=repository,
         )
     except Exception:
+        # Any failure must mark the run as failed before re-raising.
         repository.finish_run(
             ingested.batch_id,
             finished_at=datetime.now(UTC),

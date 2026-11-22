@@ -1,11 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { HealthResponse } from '../lib/types'
-  import {
-    MILLISECONDS_PER_SECOND,
-    MINUTES_PER_HOUR,
-    SECONDS_PER_MINUTE,
-  } from '../lib/constants'
+  import { MILLISECONDS_PER_SECOND } from '../lib/constants'
+  import { formatRelativeAge } from '../lib/format'
 
   interface Props {
     health: HealthResponse | null
@@ -61,15 +58,6 @@
     return 'Live data'
   })
 
-  function formatAge(seconds: number | null): string {
-    if (seconds === null) return 'not loaded yet'
-    if (seconds < 10) return 'just now'
-    if (seconds < SECONDS_PER_MINUTE) return `${seconds}s ago`
-    const minutes = Math.floor(seconds / SECONDS_PER_MINUTE)
-    if (minutes < MINUTES_PER_HOUR) return `${minutes}m ago`
-    const hours = Math.floor(minutes / MINUTES_PER_HOUR)
-    return `${hours}h ago`
-  }
 </script>
 
 <div class={`status-banner ${tone}`} role="status" aria-live="polite">
@@ -83,7 +71,7 @@
     {#if health !== null}
       <span class="version">v{health.version}</span>
     {/if}
-    <span class="updated">Updated {formatAge(ageSeconds)}</span>
+    <span class="updated">Updated {formatRelativeAge(ageSeconds)}</span>
   </span>
 </div>
 

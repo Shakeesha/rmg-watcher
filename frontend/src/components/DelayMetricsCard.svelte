@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Metrics } from '../lib/types'
-  import { SECONDS_PER_MINUTE } from '../lib/constants'
+  import { formatDurationSeconds, routeLabel } from '../lib/format'
 
   interface Props {
     metrics: Metrics | null
@@ -20,18 +20,6 @@
     return 'danger'
   })
 
-  function formatDuration(seconds: number | null | undefined): string {
-    if (seconds === null || seconds === undefined) return '—'
-    const rounded = Math.round(seconds)
-    if (rounded < SECONDS_PER_MINUTE) return `${rounded}s`
-    const minutes = Math.floor(rounded / SECONDS_PER_MINUTE)
-    const rest = rounded % SECONDS_PER_MINUTE
-    return rest === 0 ? `${minutes}m` : `${minutes}m ${rest}s`
-  }
-
-  function routeLabel(routeId: string): string {
-    return routeId.replace(/^route[-_]?/i, '') || routeId
-  }
 </script>
 
 <section class="delay-metrics-card" aria-label="Delay metrics" aria-busy={loading}>
@@ -59,13 +47,13 @@
 
       <article class="metric-tile">
         <span class="metric-label">Median delay</span>
-        <strong>{formatDuration(metrics.median_delay_seconds)}</strong>
+        <strong>{formatDurationSeconds(metrics.median_delay_seconds)}</strong>
         <span class="metric-note">typical departure</span>
       </article>
 
       <article class="metric-tile">
         <span class="metric-label">95th percentile</span>
-        <strong>{formatDuration(metrics.p95_delay_seconds)}</strong>
+        <strong>{formatDurationSeconds(metrics.p95_delay_seconds)}</strong>
         <span class="metric-note">slowest 5% of departures</span>
       </article>
     </div>
@@ -75,9 +63,9 @@
       <ol>
         {#each metrics.top_delayed_routes as route (route.route_id)}
           <li>
-            <span class="route-chip">{route.route_short_name ?? routeLabel(route.route_id)}</span>
+            <span class="route-chip">{route.route_short_name ?? routeLabel(route.route_id, 'transit')}</span>
             <span class="route-id">{route.route_id}</span>
-            <span class="route-delay">{formatDuration(route.max_delay_seconds)}</span>
+            <span class="route-delay">{formatDurationSeconds(route.max_delay_seconds)}</span>
           </li>
         {:else}
           <li class="empty">No delayed lines recorded.</li>

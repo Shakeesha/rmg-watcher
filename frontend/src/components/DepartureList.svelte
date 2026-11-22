@@ -1,6 +1,11 @@
 <script lang="ts">
   import type { Departure } from '../lib/types'
-  import { SECONDS_PER_MINUTE } from '../lib/constants'
+  import { MILLISECONDS_PER_MINUTE, SECONDS_PER_MINUTE } from '../lib/constants'
+  import {
+    formatClockTime,
+    transportIcon,
+    transportLabel,
+  } from '../lib/format'
 
   interface Props {
     departures: Departure[]
@@ -20,19 +25,6 @@
       : departures,
   )
 
-  const timeFormatter = new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-
-  function formatTime(value: string | null): string {
-    if (value === null) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return timeFormatter.format(date)
-  }
-
   function delayText(departure: Departure): string {
     if (departure.status === 'cancelled') return 'Cancelled'
     if (departure.delay_seconds === null) return 'No estimate'
@@ -47,7 +39,7 @@
     if (departure.status === 'cancelled') return 'Cancelled'
     const target = new Date(departure.expected_time ?? departure.scheduled_time)
     if (Number.isNaN(target.getTime())) return '—'
-    const minutes = Math.ceil((target.getTime() - Date.now()) / 60_000)
+    const minutes = Math.ceil((target.getTime() - Date.now()) / MILLISECONDS_PER_MINUTE)
     if (minutes <= 0) return 'Due'
     return `in ${minutes} min`
   }
@@ -56,25 +48,6 @@
     return departure.status === 'cancelled' ? 'cancelled' : departure.delay_category
   }
 
-  function modeIcon(mode: string | null): string {
-    const value = (mode ?? '').toLowerCase()
-    if (value.includes('bus') || value.includes('coach')) return '🚌'
-    if (value.includes('tram') || value.includes('light_rail')) return '🚊'
-    if (value.includes('rail') || value.includes('train')) return '🚆'
-    if (value.includes('subway') || value.includes('metro')) return '🚇'
-    if (value.includes('ferry')) return '⛴️'
-    return '•'
-  }
-
-  function modeLabel(mode: string | null): string {
-    const value = (mode ?? '').toLowerCase()
-    if (value.includes('bus') || value.includes('coach')) return 'Bus'
-    if (value.includes('tram') || value.includes('light_rail')) return 'Tram'
-    if (value.includes('rail') || value.includes('train')) return 'Train'
-    if (value.includes('subway') || value.includes('metro')) return 'Subway'
-    if (value.includes('ferry')) return 'Ferry'
-    return 'Transit'
-  }
 </script>
 
 <section class="departure-list" aria-label="Departures" aria-busy={loading}>
@@ -129,10 +102,10 @@
           <span
             class="mode-icon"
             role="img"
-            aria-label={modeLabel(departure.mode)}
-            title={modeLabel(departure.mode)}
+            aria-label={transportLabel(departure.mode)}
+            title={transportLabel(departure.mode)}
           >
-            {modeIcon(departure.mode)}
+            {transportIcon(departure.mode)}
           </span>
 
           <span class="route-badge" aria-label={`Route ${departure.route_short_name}`}>
@@ -141,14 +114,14 @@
 
           <span class="departure-main">
             <span class="departure-time">
-              {formatTime(departure.expected_time ?? departure.scheduled_time)}
+              {formatClockTime(departure.expected_time ?? departure.scheduled_time)}
             </span>
             <span class="departure-sub">
               {#if departure.wheelchair_accessible}
                 ♿
               {/if}
               {#if departure.expected_time}
-                scheduled {formatTime(departure.scheduled_time)}
+                scheduled {formatClockTime(departure.scheduled_time)}
               {:else}
                 scheduled
               {/if}

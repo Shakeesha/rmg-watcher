@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { NearbyStop } from '../lib/types'
+  import { transportIcon } from '../lib/format'
   import {
     MAP_BASELINE_Y,
     MAP_MARGIN_X,
@@ -67,14 +68,6 @@
     center === null ? null : project(center.latitude, center.longitude),
   )
 
-  function modeIcon(mode: string | null): string {
-    const value = (mode ?? '').toLowerCase()
-    if (value.includes('bus') || value.includes('coach')) return '🚌'
-    if (value.includes('tram') || value.includes('light_rail')) return '🚊'
-    if (value.includes('rail') || value.includes('train')) return '🚆'
-    return '•'
-  }
-
   function activate(stop: NearbyStop): void {
     onSelect(stop)
   }
@@ -123,7 +116,7 @@
           class="stop-icon"
           text-anchor="middle"
         >
-          {modeIcon(item.stop.mode)}
+          {transportIcon(item.stop.mode)}
         </text>
         <text
           x={item.point.x}

@@ -39,6 +39,7 @@ class Database:
             yield connection
             connection.commit()
         except Exception:
+            # Roll back any failed statement before closing the connection.
             connection.rollback()
             raise
         finally:
