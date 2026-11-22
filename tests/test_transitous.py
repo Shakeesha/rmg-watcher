@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -153,3 +155,42 @@ def test_connections_cache_and_daily_cap(transitous_settings: Settings) -> None:
 
         with pytest.raises(ApiError, match="Daily connection search limit"):
             client.search_connections("b", "c", at=now)
+
+
+@respx.mock
+def test_departures_use_stale_cache_when_api_fails(
+    transitous_settings: Settings,
+) -> None:
+    route = respx.get(f"{BASE}/v6/stoptimes").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "stopTimes": [
+                    {
+                        "tripId": "trip-1",
+                        "routeId": "route-1",
+                        "place": {
+                            "scheduledDeparture": "2026-11-22T10:00:00Z",
+                            "departure": "2026-11-22T10:00:00Z",
+                        },
+                    }
+                ]
+            },
+        )
+    )
+    with TransitousClient(transitous_settings) as client:
+        fresh = client.fetch_departures("stop-x")
+
+    digest = hashlib.sha256(b"stop-x|0").hexdigest()[:20]
+    cache_path = (
+        transitous_settings.transitous_cache_path / "departures" / f"{digest}.json"
+    )
+    document = json.loads(cache_path.read_text(encoding="utf-8"))
+    document["fetched_at"] = "2020-01-01T00:00:00+00:00"
+    cache_path.write_text(json.dumps(document), encoding="utf-8")
+
+    route.mock(return_value=httpx.Response(502))
+    with TransitousClient(transitous_settings) as client:
+        stale = client.fetch_departures("stop-x")
+
+    assert stale == fresh

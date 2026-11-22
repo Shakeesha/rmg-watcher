@@ -197,16 +197,22 @@ class TransitousClient:
         if cached is not None:
             return _records(cached)
 
-        payload = self._get(
-            "/v6/stoptimes",
-            params={
-                "stopId": stop_id,
-                "n": self._settings.transitous_departure_limit,
-                "arriveBy": arrive_by,
-                "realtimeMode": "REALTIME",
-                "language": "de",
-            },
-        )
+        try:
+            payload = self._get(
+                "/v6/stoptimes",
+                params={
+                    "stopId": stop_id,
+                    "n": self._settings.transitous_departure_limit,
+                    "arriveBy": arrive_by,
+                    "realtimeMode": "REALTIME",
+                    "language": "de",
+                },
+            )
+        except ApiError:
+            stale = self._read_cache_any(cache_path)
+            if stale is not None:
+                return _records(stale)
+            raise
         if not isinstance(payload, dict):
             raise ApiError("Unexpected Transitous stoptimes payload")
 
@@ -540,6 +546,14 @@ class TransitousClient:
         if (self._now() - fetched).total_seconds() > ttl_seconds:
             return None
         return document.get("payload")
+
+    def _read_cache_any(self, path: Path) -> object | None:
+        """Return cached payload regardless of age, for offline fallback."""
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        return document.get("payload") if isinstance(document, dict) else None
 
     def _write_cache(self, path: Path, payload: object) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
