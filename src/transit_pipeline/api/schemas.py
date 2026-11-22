@@ -53,6 +53,7 @@ class RouteDelayResponse(BaseModel):
     """Worst observed delay for a route."""
 
     route_id: str
+    route_short_name: str | None = None
     max_delay_seconds: int
 
 
@@ -64,9 +65,32 @@ class TransferRiskResponse(BaseModel):
     stop_id: str
     inbound_route_id: str
     outbound_route_id: str
+    inbound_route_name: str | None = None
+    outbound_route_name: str | None = None
     scheduled_transfer_seconds: int
     projected_slack_seconds: int
     at_risk: bool
+
+
+class ConnectionLegResponse(BaseModel):
+    """One leg of a planned connection."""
+
+    mode: str
+    route: str | None = None
+    from_name: str
+    to_name: str
+    departure: datetime
+    arrival: datetime
+
+
+class ConnectionResponse(BaseModel):
+    """A planned journey between two stops."""
+
+    departure: datetime
+    arrival: datetime
+    duration_minutes: int
+    transfers: int
+    legs: list[ConnectionLegResponse]
 
 
 class MetricsResponse(BaseModel):

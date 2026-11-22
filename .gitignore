@@ -23,6 +23,7 @@ data/quarantine/*
 data/*.db
 data/*.db-*
 data/*.sqlite3
+data/transitous/
 
 # Frontend
 frontend/node_modules/

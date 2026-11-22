@@ -23,6 +23,7 @@ so the Pi needs no Node.js runtime after deployment.
 | Live | Next departures for the selected stop with expected time, scheduled time, countdown, and delay badge. |
 | Delays | Punctuality, median delay, 95th-percentile delay, and the most delayed lines. |
 | Transfers | Connection pairs ranked by projected slack, with at-risk connections highlighted. |
+| Connections | User-initiated journey planning between two stops, with cached results. |
 
 ## Touch targets and focus
 

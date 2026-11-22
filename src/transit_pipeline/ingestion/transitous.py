@@ -3,7 +3,8 @@
 Transitous is a community service: see https://transitous.org/api/ for its
 usage policy. This client therefore downloads the regional stop catalog at most
 once per day and caches departures for each watched stop for a configurable
-minimum interval (7 minutes by default).
+minimum interval (10 minutes by default). Connection searches use a separate
+daily request cap.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -44,6 +46,20 @@ def distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
         + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
     )
     return int(2 * radius * math.asin(math.sqrt(h)))
+
+
+def _prefer_stop(candidate: dict[str, Any], existing: dict[str, Any]) -> bool:
+    """Prefer parent stop IDs over platform-level IDs."""
+    candidate_id = str(candidate["stopId"])
+    existing_id = str(existing["stopId"])
+    if len(candidate_id) != len(existing_id):
+        return len(candidate_id) < len(existing_id)
+    return candidate_id.count(":") < existing_id.count(":")
+
+
+def normalize_stop_name(name: str) -> str:
+    """Normalise a stop name so platform variants collapse to one entry."""
+    return re.sub(r"[^a-z0-9]", "", name.casefold())
 
 
 def load_cached_stops(cache_path: Path) -> list[dict[str, Any]]:
@@ -153,9 +169,13 @@ class TransitousClient:
                 "latitude": float(lat),
                 "longitude": float(lon),
             }
-            key = (name, round(float(lat), 3), round(float(lon), 3))
+            key = (
+                normalize_stop_name(name),
+                round(float(lat), 2),
+                round(float(lon), 2),
+            )
             existing = stops.get(key)
-            if existing is None or len(stop_id) < len(str(existing["stopId"])):
+            if existing is None or _prefer_stop(stop, existing):
                 stops[key] = stop
 
         result = sorted(stops.values(), key=lambda stop: str(stop["name"]))
@@ -193,7 +213,81 @@ class TransitousClient:
         self._write_cache(cache_path, result)
         return result
 
-    def _get(self, path: str, *, params: dict[str, str | int]) -> object:
+    def search_connections(
+        self,
+        from_stop: str,
+        to_stop: str,
+        *,
+        limit: int = 3,
+        at: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        """Search connections, with a 15-minute cache key and a daily request cap."""
+        moment = at or self._now()
+        bucket = moment.replace(
+            minute=moment.minute - moment.minute % 15,
+            second=0,
+            microsecond=0,
+        )
+        key_source = f"{from_stop}|{to_stop}|{bucket.isoformat()}"
+        digest = hashlib.sha256(key_source.encode("utf-8")).hexdigest()[:20]
+        cache_path = self._cache_dir / "connections" / f"{digest}.json"
+
+        cached = self._read_cache(
+            cache_path,
+            self._settings.transitous_plan_cache_minutes * 60,
+        )
+        if cached is not None:
+            return _records(cached)
+
+        self._charge_plan_request()
+        payload = self._get(
+            "/v6/plan",
+            params={
+                "fromPlace": from_stop,
+                "toPlace": to_stop,
+                "time": moment.isoformat(),
+                "numItineraries": limit,
+                "maxTransfers": 3,
+                "searchWindow": 1800,
+                "detailedLegs": False,
+                "withFares": False,
+                "realtimeMode": "REALTIME",
+                "language": "de",
+            },
+        )
+        if not isinstance(payload, dict):
+            raise ApiError("Unexpected Transitous plan payload")
+        itineraries = _records(payload.get("itineraries"))
+        self._write_cache(cache_path, itineraries)
+        return itineraries
+
+    def _charge_plan_request(self) -> None:
+        """Enforce a daily cap on the resource-heavy plan endpoint."""
+        counter_path = self._cache_dir / "plan-counter.json"
+        today = self._now().date().isoformat()
+        count = 0
+        try:
+            document = json.loads(counter_path.read_text(encoding="utf-8"))
+            body = document.get("payload", document) if isinstance(document, dict) else None
+            if isinstance(body, dict) and body.get("date") == today:
+                value = body.get("count")
+                if isinstance(value, int):
+                    count = value
+        except (OSError, json.JSONDecodeError):
+            pass
+
+        if count >= self._settings.transitous_plan_limit_per_day:
+            raise ApiError(
+                "Daily connection search limit reached; "
+                "try again tomorrow or raise TRANSITOUS_PLAN_LIMIT_PER_DAY"
+            )
+
+        self._write_cache(
+            counter_path,
+            {"date": today, "count": count + 1},
+        )
+
+    def _get(self, path: str, *, params: dict[str, str | int | bool]) -> object:
         try:
             response = self._client.get(path, params=params)
             response.raise_for_status()

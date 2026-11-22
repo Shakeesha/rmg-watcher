@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -131,3 +132,24 @@ def test_client_requires_a_contact(transitous_settings: Settings) -> None:
 
     with pytest.raises(ApiError, match="TRANSIT_CONTACT"):
         TransitousClient(settings)
+
+
+@respx.mock
+def test_connections_cache_and_daily_cap(transitous_settings: Settings) -> None:
+    settings = transitous_settings.model_copy(
+        update={"transitous_plan_limit_per_day": 1}
+    )
+    route = respx.get(f"{BASE}/v6/plan").mock(
+        return_value=httpx.Response(200, json={"itineraries": [{"id": "it-1"}]})
+    )
+    now = datetime(2026, 11, 22, 10, 7, tzinfo=UTC)
+
+    with TransitousClient(settings) as client:
+        first = client.search_connections("a", "b", at=now)
+        second = client.search_connections("a", "b", at=now)
+
+        assert first == second
+        assert route.call_count == 1
+
+        with pytest.raises(ApiError, match="Daily connection search limit"):
+            client.search_connections("b", "c", at=now)

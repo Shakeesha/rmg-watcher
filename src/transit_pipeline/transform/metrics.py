@@ -5,7 +5,7 @@ from __future__ import annotations
 import heapq
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from transit_pipeline.domain.models import DelayEvent, TripStatus
 
@@ -21,6 +21,7 @@ class MetricsSummary:
     median_delay_seconds: float | None
     p95_delay_seconds: float | None
     top_delayed_routes: list[tuple[str, int]]
+    route_names: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,9 +31,11 @@ class TransferRisk:
     stop_id: str
     inbound_route_id: str
     outbound_route_id: str
-    scheduled_transfer_seconds: int
-    projected_slack_seconds: int
-    at_risk: bool
+    inbound_route_name: str | None = None
+    outbound_route_name: str | None = None
+    scheduled_transfer_seconds: int = 0
+    projected_slack_seconds: int = 0
+    at_risk: bool = False
 
 
 def percentile(values: Sequence[float], rank: float) -> float | None:

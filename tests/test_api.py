@@ -82,6 +82,7 @@ def test_metrics_include_transfer_risks(client: TestClient) -> None:
     assert body["total_events"] == 7
     assert body["top_delayed_routes"][0] == {
         "route_id": "route-H",
+        "route_short_name": "H",
         "max_delay_seconds": 1200,
     }
     assert body["transfer_risks"]
@@ -176,3 +177,18 @@ def test_live_departures_endpoint_uses_stored_data_in_mock_mode(
     departures = response.json()
     assert len(departures) == 2
     assert departures[0]["trip_id"] == "trip-1001"
+
+
+def test_connections_endpoint_is_empty_in_mock_mode(
+    settings: Settings,
+    repository: TransitRepository,
+) -> None:
+    app = create_app(settings=settings, repository=repository)
+
+    with TestClient(app) as test_client:
+        response = test_client.get(
+            "/api/connections?from=luisenplatz&to=hbf"
+        )
+
+    assert response.status_code == 200
+    assert response.json() == []

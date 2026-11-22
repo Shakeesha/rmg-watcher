@@ -1,6 +1,7 @@
 // Typed fetch client for /api/health, /api/departures, and /api/metrics.
 
 import type {
+  Connection,
   Departure,
   HealthResponse,
   Metrics,
@@ -56,6 +57,20 @@ export function fetchLiveDepartures(
 ): Promise<Departure[]> {
   const path = `/departures/live/${encodeURIComponent(stopId)}?limit=${limit}`
   return getJson<Departure[]>(path, signal)
+}
+
+export function fetchConnections(
+  fromStop: string,
+  toStop: string,
+  signal?: AbortSignal,
+  limit = 3,
+): Promise<Connection[]> {
+  const query = new URLSearchParams({
+    from: fromStop,
+    to: toStop,
+    limit: String(limit),
+  })
+  return getJson<Connection[]>(`/connections?${query.toString()}`, signal)
 }
 
 export function fetchMetrics(signal?: AbortSignal): Promise<Metrics> {

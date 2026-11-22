@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
 from transit_pipeline.domain.models import (
@@ -245,7 +246,7 @@ class TransitRepository:
                 ORDER BY name
                 """
             ).fetchall()
-        return [
+        stops = [
             Stop(
                 stop_id=row["stop_id"],
                 name=row["name"],
@@ -254,6 +255,15 @@ class TransitRepository:
             )
             for row in rows
         ]
+        seen: set[str] = set()
+        unique: list[Stop] = []
+        for stop in stops:
+            key = re.sub(r"[^a-z0-9]", "", stop.name.casefold())
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(stop)
+        return unique
 
     def get_stop(self, stop_id: str) -> Stop | None:
         with self.database.session() as connection:
@@ -341,11 +351,31 @@ class TransitRepository:
             for row in rows
         ]
 
+    def _route_names(self) -> dict[str, str]:
+        with self.database.session() as connection:
+            rows = connection.execute(
+                "SELECT route_id, short_name FROM dim_routes"
+            ).fetchall()
+        return {
+            str(row["route_id"]): str(row["short_name"])
+            for row in rows
+            if row["short_name"]
+        }
+
     def metrics_summary(self, *, limit: int = 5_000) -> MetricsSummary:
-        return summarize_metrics(self.list_events(limit=limit))
+        summary = summarize_metrics(self.list_events(limit=limit))
+        return replace(summary, route_names=self._route_names())
 
     def transfer_risks(self, *, limit: int = 5_000) -> list[TransferRisk]:
-        return assess_transfer_risks(self.list_events(limit=limit))
+        names = self._route_names()
+        return [
+            replace(
+                risk,
+                inbound_route_name=names.get(risk.inbound_route_id),
+                outbound_route_name=names.get(risk.outbound_route_id),
+            )
+            for risk in assess_transfer_risks(self.list_events(limit=limit))
+        ]
 
     def count_events(self) -> int:
         with self.database.session() as connection:

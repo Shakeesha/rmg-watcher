@@ -58,9 +58,13 @@
           <span class="risk-status">{risk.at_risk ? 'At risk' : 'OK'}</span>
 
           <span class="transfer">
-            <span class="route-chip">{routeLabel(risk.inbound_route_id)}</span>
+            <span class="route-chip">
+              {risk.inbound_route_name ?? routeLabel(risk.inbound_route_id)}
+            </span>
             <span class="arrow" aria-hidden="true">→</span>
-            <span class="route-chip">{routeLabel(risk.outbound_route_id)}</span>
+            <span class="route-chip">
+              {risk.outbound_route_name ?? routeLabel(risk.outbound_route_id)}
+            </span>
           </span>
 
           <span class="risk-stop">{stopName(risk.stop_id)}</span>

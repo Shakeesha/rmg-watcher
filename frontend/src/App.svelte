@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import ConnectionList from './components/ConnectionList.svelte'
   import DepartureList from './components/DepartureList.svelte'
   import DelayMetricsCard from './components/DelayMetricsCard.svelte'
   import StatusBanner from './components/StatusBanner.svelte'
@@ -7,6 +8,7 @@
   import TopNavBar from './components/TopNavBar.svelte'
   import TransferRiskList from './components/TransferRiskList.svelte'
   import {
+    fetchConnections,
     fetchDepartures,
     fetchHealth,
     fetchLiveDepartures,
@@ -15,7 +17,14 @@
     fetchStops,
   } from './lib/api'
   import { activeView, installNavigation } from './lib/navigation'
-  import type { Departure, HealthResponse, Metrics, NearbyStop, Stop } from './lib/types'
+  import type {
+    Connection,
+    Departure,
+    HealthResponse,
+    Metrics,
+    NearbyStop,
+    Stop,
+  } from './lib/types'
 
   const POLL_INTERVAL_MS = 15_000
   const STOP_STORAGE_KEY = 'transit-kiosk-stop'
@@ -27,6 +36,9 @@
   let nearbyStops = $state<NearbyStop[]>([])
   let nearbyOpen = $state(false)
   let nearbyLoading = $state(false)
+  let connections = $state<Connection[]>([])
+  let connectionLoading = $state(false)
+  let connectionError = $state<string | null>(null)
   let departures = $state<Departure[]>([])
   let metrics = $state<Metrics | null>(null)
   let health = $state<HealthResponse | null>(null)
@@ -191,6 +203,19 @@
     }
   }
 
+  async function searchConnections(from: string, to: string): Promise<void> {
+    connectionLoading = true
+    connectionError = null
+    connections = []
+    try {
+      connections = await fetchConnections(from, to)
+    } catch (caught) {
+      connectionError = caught instanceof Error ? caught.message : 'Unable to plan connections'
+    } finally {
+      connectionLoading = false
+    }
+  }
+
   onMount(() => {
     online = navigator.onLine
 
@@ -245,8 +270,17 @@
       <DepartureList {departures} {loading} stopName={selectedStopName} />
     {:else if $activeView === 'delays'}
       <DelayMetricsCard {metrics} {loading} />
-    {:else}
+    {:else if $activeView === 'transfers'}
       <TransferRiskList risks={metrics?.transfer_risks ?? []} {stops} {loading} />
+    {:else}
+      <ConnectionList
+        {stops}
+        selectedStopId={liveStopId ?? selectedStopId}
+        {connections}
+        loading={connectionLoading}
+        error={connectionError}
+        onSearch={(from, to) => void searchConnections(from, to)}
+      />
     {/if}
   </main>
 

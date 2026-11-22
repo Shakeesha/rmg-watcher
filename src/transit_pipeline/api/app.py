@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -14,6 +15,8 @@ from fastapi.staticfiles import StaticFiles
 
 from transit_pipeline import __version__
 from transit_pipeline.api.schemas import (
+    ConnectionLegResponse,
+    ConnectionResponse,
     DepartureResponse,
     HealthResponse,
     MetricsResponse,
@@ -27,6 +30,7 @@ from transit_pipeline.ingestion.transitous import (
     TransitousClient,
     distance_meters,
     load_cached_stops,
+    normalize_stop_name,
 )
 from transit_pipeline.storage.db import Database
 from transit_pipeline.storage.repository import TransitRepository
@@ -42,6 +46,15 @@ def get_repository(request: Request) -> TransitRepository:
 
 
 RepositoryDep = Annotated[TransitRepository, Depends(get_repository)]
+
+
+def _as_datetime(value: object) -> datetime:
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+    return datetime.now(UTC)
 
 
 def _catalog_stops(settings: Settings) -> list[dict[str, object]]:
@@ -97,6 +110,7 @@ def _nearby_stops(
     ]
 
     nearby: list[tuple[int, StopResponse]] = []
+    seen: dict[str, int] = {}
     for item in candidates:
         if item.get("stopId") == stop_id:
             continue
@@ -114,6 +128,10 @@ def _nearby_stops(
         )
         if distance > settings.transitous_nearby_radius_m:
             continue
+        name_key = normalize_stop_name(name)
+        if name_key in seen and seen[name_key] <= distance:
+            continue
+        seen[name_key] = distance
         nearby.append(
             (
                 distance,
@@ -170,6 +188,56 @@ def _live_departures(
                 delay_seconds=event.delay_seconds,
                 delay_category=event.delay_category.value,
                 status=event.status.value,
+            )
+        )
+    return result
+
+
+def _connections(
+    from_stop: str,
+    to_stop: str,
+    limit: int,
+    settings: Settings,
+) -> list[ConnectionResponse]:
+    if settings.mock_mode or settings.transit_provider != "transitous":
+        return []
+
+    client = TransitousClient(settings)
+    try:
+        itineraries = client.search_connections(from_stop, to_stop, limit=limit)
+    finally:
+        client.close()
+
+    result: list[ConnectionResponse] = []
+    for itinerary in itineraries:
+        legs: list[ConnectionLegResponse] = []
+        for leg in itinerary.get("legs", []):
+            if not isinstance(leg, dict):
+                continue
+            origin, destination = leg.get("from"), leg.get("to")
+            if not isinstance(origin, dict) or not isinstance(destination, dict):
+                continue
+            mode = leg.get("mode")
+            route = leg.get("routeShortName") or leg.get("displayName")
+            legs.append(
+                ConnectionLegResponse(
+                    mode=str(mode).lower() if mode is not None else "transit",
+                    route=str(route) if route is not None else None,
+                    from_name=str(origin.get("name") or ""),
+                    to_name=str(destination.get("name") or ""),
+                    departure=_as_datetime(
+                        leg.get("startTime") or itinerary.get("startTime")
+                    ),
+                    arrival=_as_datetime(leg.get("endTime") or itinerary.get("endTime")),
+                )
+            )
+        result.append(
+            ConnectionResponse(
+                departure=_as_datetime(itinerary.get("startTime")),
+                arrival=_as_datetime(itinerary.get("endTime")),
+                duration_minutes=int(itinerary.get("duration") or 0) // 60,
+                transfers=int(itinerary.get("transfers") or 0),
+                legs=legs,
             )
         )
     return result
@@ -278,6 +346,23 @@ def create_app(
         except ApiError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
+    @app.get(
+        "/api/connections",
+        response_model=list[ConnectionResponse],
+        tags=["connections"],
+    )
+    def connections(
+        from_stop: str = Query(alias="from"),
+        to_stop: str = Query(alias="to"),
+        limit: int = Query(default=3, ge=1, le=5),
+    ) -> list[ConnectionResponse]:
+        if not from_stop.strip() or not to_stop.strip():
+            raise HTTPException(status_code=400, detail="from and to are required")
+        try:
+            return _connections(from_stop, to_stop, limit, app_settings)
+        except ApiError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
     @app.get("/api/metrics", response_model=MetricsResponse, tags=["metrics"])
     def metrics(repo: RepositoryDep) -> MetricsResponse:
         summary = repo.metrics_summary()
@@ -288,7 +373,11 @@ def create_app(
             median_delay_seconds=summary.median_delay_seconds,
             p95_delay_seconds=summary.p95_delay_seconds,
             top_delayed_routes=[
-                RouteDelayResponse(route_id=route_id, max_delay_seconds=delay)
+                RouteDelayResponse(
+                    route_id=route_id,
+                    route_short_name=summary.route_names.get(route_id) or route_id,
+                    max_delay_seconds=delay,
+                )
                 for route_id, delay in summary.top_delayed_routes
             ],
             transfer_risks=[

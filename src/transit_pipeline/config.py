@@ -89,9 +89,21 @@ class Settings(BaseSettings):
         validation_alias="TRANSITOUS_DEPARTURE_LIMIT",
     )
     transitous_min_refresh_seconds: int = Field(
-        default=420,
+        default=600,
         ge=60,
         validation_alias="TRANSITOUS_MIN_REFRESH_SECONDS",
+    )
+    transitous_plan_limit_per_day: int = Field(
+        default=30,
+        ge=1,
+        le=200,
+        validation_alias="TRANSITOUS_PLAN_LIMIT_PER_DAY",
+    )
+    transitous_plan_cache_minutes: int = Field(
+        default=30,
+        ge=1,
+        le=240,
+        validation_alias="TRANSITOUS_PLAN_CACHE_MINUTES",
     )
     transitous_nearby_radius_m: int = Field(
         default=1000,

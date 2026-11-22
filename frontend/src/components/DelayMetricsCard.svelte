@@ -74,7 +74,7 @@
       <ol>
         {#each metrics.top_delayed_routes as route (route.route_id)}
           <li>
-            <span class="route-chip">{routeLabel(route.route_id)}</span>
+            <span class="route-chip">{route.route_short_name ?? routeLabel(route.route_id)}</span>
             <span class="route-id">{route.route_id}</span>
             <span class="route-delay">{formatDuration(route.max_delay_seconds)}</span>
           </li>

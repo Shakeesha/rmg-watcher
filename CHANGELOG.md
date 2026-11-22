@@ -13,14 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `TransitousClient` for live RMV/HEAG/DB data via the Transitous MOTIS v6 API.
 - Required `TRANSIT_CONTACT` in the User-Agent, per the Transitous usage policy.
-- Daily cached stop catalog and per-stop departure cache with a 7-minute
+- Daily cached stop catalog and per-stop departure cache with a 10-minute
   minimum refresh interval to keep request volume low.
 - Configurable Darmstadt-Dieburg/Babenhausen bounding box and watched-stop list.
 - Optional **Nearby** stop checks in the kiosk UI using the cached catalog and
   on-demand cached departures.
+- **Connections** view with cached `/v6/plan` searches and a daily request cap.
+- Readable route short names in delay and transfer views instead of raw IDs.
 - Transitous and OpenStreetMap attribution in the kiosk UI and README.
-- Tests for Transitous mapping, caching, contact enforcement, nearby stops, and
-  the live departures endpoint.
+- Feature roadmap based on DB Navigator and HEAG mobilo.
+- Tests for Transitous mapping, caching, contact enforcement, nearby stops,
+  connections, and the live departures endpoint.
+
+### Fixed
+
+- Duplicate stop names in the stop bar and nearby list.
 
 ## [0.10.2] - 2026-11-22
 
@@ -139,7 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fetcher factory that selects the mock client in mock mode.
 - Shared pytest fixtures for isolated settings and mock fetching.
 - Autouse outbound network guard that blocks non-local socket connections.
-- Stop and departure fixtures covering valid, duplicate, cancelled, and
+- Stop and departure fixtures covering valid, duplicate, canceled, and
   malformed records.
 
 ## [0.3.0] - 2026-11-21

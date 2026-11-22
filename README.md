@@ -64,7 +64,9 @@ mock data:
    TRANSITOUS_AREA_MIN=49.80,9.00
    TRANSITOUS_AREA_MAX=50.02,8.55
    TRANSITOUS_WATCH_STOPS=de-DELFI_de:06411:4734,de-amarillo-bw_de:06411:4736,de-DELFI_de:06432:8563
-   TRANSITOUS_MIN_REFRESH_SECONDS=420
+   TRANSITOUS_MIN_REFRESH_SECONDS=600
+   TRANSITOUS_PLAN_LIMIT_PER_DAY=30
+   TRANSITOUS_PLAN_CACHE_MINUTES=30
    TRANSITOUS_NEARBY_RADIUS_M=1000
    TRANSITOUS_NEARBY_LIMIT=8
    ```
@@ -75,12 +77,17 @@ The default watchlist is Darmstadt Hbf, Darmstadt Luisenplatz, and Babenhausen
 (Hess) Bahnhof. The full regional catalog is cached once per day under
 `data/transitous/`, but only the watched stops are refreshed automatically.
 Add more stop IDs to `TRANSITOUS_WATCH_STOPS` as needed — keep the list short to
-respect the Transitous usage policy. At the default 7-minute refresh interval,
-three stops generate roughly 617 API requests per day.
+respect the Transitous usage policy. At the default 10-minute refresh interval,
+three stops generate roughly 432 API requests per day.
 
 In the kiosk UI, press **Nearby** in the stop bar to list stops within 1 km of
 the current stop and check their departures on demand. Those departures use the
-same 7-minute cache, so repeated checks do not create extra requests.
+same 10-minute cache, so repeated checks do not create extra requests.
+
+The **Connections** view plans a trip between two stops. It caches results for
+30 minutes and allows 30 fresh `/plan` requests per day by default; increase
+`TRANSITOUS_PLAN_LIMIT_PER_DAY` only if your usage stays within the Transitous
+policy.
 
 The UI links to [Transitous sources](https://transitous.org/sources/) and
 OpenStreetMap attribution. Consider
@@ -198,3 +205,4 @@ data/                   Runtime storage (gitignored)
 - [Architecture and memory budget](docs/architecture.md)
 - [Star schema and metrics](docs/schema.md)
 - [Kiosk layout and touch navigation](docs/hardware_ui.md)
+- [Feature roadmap](docs/roadmap.md)

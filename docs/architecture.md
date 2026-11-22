@@ -91,17 +91,22 @@ Transitous is a community service, so this client is deliberately quiet:
 - The Darmstadt-Dieburg/Babenhausen stop catalog is downloaded at most once per
   24 hours and cached under `data/transitous/stops.json`.
 - Departures are cached per watched stop and refreshed at most once every
-  `TRANSITOUS_MIN_REFRESH_SECONDS` (420 seconds / 7 minutes by default).
+  `TRANSITOUS_MIN_REFRESH_SECONDS` (600 seconds / 10 minutes by default).
 - The default watchlist contains three stops: Darmstadt Hbf, Darmstadt
-  Luisenplatz, and Babenhausen (Hess) Bahnhof. That is roughly 617 departure
-  requests per day, still below the policy's 720-request threshold.
+  Luisenplatz, and Babenhausen (Hess) Bahnhof. That is roughly 432 departure
+  requests per day, below the policy's 720-request threshold.
 - The kiosk has a **Nearby** option: it uses the cached catalog to list stops
   within `TRANSITOUS_NEARBY_RADIUS_M` and fetches their departures on demand
-  through the same 7-minute cache. Nearby checks are user-initiated and cached,
+  through the same 10-minute cache. Nearby checks are user-initiated and cached,
   so they do not run on every pipeline tick.
+- The **Connections** view uses the resource-heavy `/v6/plan` endpoint. Results
+  are cached for 30 minutes per from/to/time bucket, and a daily counter caps
+  fresh plan requests at `TRANSITOUS_PLAN_LIMIT_PER_DAY` (30 by default).
 - To add permanent stops, add their IDs to `TRANSITOUS_WATCH_STOPS`; keep the
   list short. The full catalog is available locally for finding IDs, but
   polling hundreds of stops would violate the usage policy.
+- Route short names from `dim_routes` are used in transfer and delay views, so
+  raw GTFS IDs are never shown to passengers.
 - The UI links to `transitous.org/sources/` and OpenStreetMap attribution.
 
 ## Reliability
