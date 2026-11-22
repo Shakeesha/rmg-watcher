@@ -7,7 +7,8 @@
     "stopId": "luisenplatz",
     "scheduledTime": "2026-11-21T08:00:00+01:00",
     "expectedTime": "2026-11-21T08:03:00+01:00",
-    "status": "delayed"
+    "status": "delayed",
+    "wheelchairAccessible": true
   },
   {
     "tripId": "trip-1002",
@@ -17,7 +18,8 @@
     "stopId": "luisenplatz",
     "scheduledTime": "2026-11-21T08:05:00+01:00",
     "expectedTime": "2026-11-21T08:05:00+01:00",
-    "status": "on_time"
+    "status": "on_time",
+    "wheelchairAccessible": false
   },
   {
     "tripId": "trip-1003",
@@ -27,7 +29,8 @@
     "stopId": "luisenplatz",
     "scheduledTime": "2026-11-21T08:10:00+01:00",
     "expectedTime": null,
-    "status": "cancelled"
+    "status": "cancelled",
+    "wheelchairAccessible": null
   },
   {
     "tripId": "trip-1004",
@@ -37,7 +40,8 @@
     "stopId": "luisenplatz",
     "scheduledTime": "2026-11-21T08:15:00+01:00",
     "expectedTime": "2026-11-21T08:27:00+01:00",
-    "status": "delayed"
+    "status": "delayed",
+    "wheelchairAccessible": true
   },
   {
     "tripId": "trip-1001",
@@ -47,7 +51,8 @@
     "stopId": "luisenplatz",
     "scheduledTime": "2026-11-21T08:00:00+01:00",
     "expectedTime": "2026-11-21T08:04:00+01:00",
-    "status": "delayed"
+    "status": "delayed",
+    "wheelchairAccessible": true
   },
   {
     "routeId": "route-9",
@@ -56,7 +61,8 @@
     "stopId": "luisenplatz",
     "scheduledTime": "2026-11-21T08:20:00+01:00",
     "expectedTime": "2026-11-21T08:21:00+01:00",
-    "status": "delayed"
+    "status": "delayed",
+    "wheelchairAccessible": true
   },
   {
     "tripId": "trip-1007",
@@ -66,7 +72,8 @@
     "stopId": "luisenplatz",
     "scheduledTime": "not-a-timestamp",
     "expectedTime": "2026-11-21T08:25:00+01:00",
-    "status": "delayed"
+    "status": "delayed",
+    "wheelchairAccessible": false
   },
   {
     "tripId": "trip-2001",
@@ -76,7 +83,8 @@
     "stopId": "hbf",
     "scheduledTime": "2026-11-21T08:02:00+01:00",
     "expectedTime": "2026-11-21T08:02:00+01:00",
-    "status": "on_time"
+    "status": "on_time",
+    "wheelchairAccessible": true
   },
   {
     "tripId": "trip-2002",
@@ -86,7 +94,8 @@
     "stopId": "hbf",
     "scheduledTime": "2026-11-21T08:12:00+01:00",
     "expectedTime": "2026-11-21T08:32:00+01:00",
-    "status": "delayed"
+    "status": "delayed",
+    "wheelchairAccessible": false
   },
   {
     "tripId": "trip-2003",
@@ -96,6 +105,7 @@
     "stopId": "hbf",
     "scheduledTime": "2026-11-21T08:22:00+01:00",
     "expectedTime": "2026-11-21T08:22:00+01:00",
-    "status": "on_time"
+    "status": "on_time",
+    "wheelchairAccessible": true
   }
 ]

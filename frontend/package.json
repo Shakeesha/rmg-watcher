@@ -1,7 +1,7 @@
 {
   "name": "rmg-watcher",
   "private": true,
-  "version": "0.21.0",
+  "version": "0.21.1",
   "description": "Small-screen kiosk UI for RMG-Watcher (Rhein-Main-Gebiet)",
   "type": "module",
   "scripts": {

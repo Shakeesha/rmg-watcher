@@ -84,7 +84,7 @@ def test_duplicates_keep_the_latest_update(
     assert len(unique) == 4
     trip = next(record for record in unique if record.trip_id == "trip-1001")
     assert trip.expected_time is not None
-    assert trip.expected_time.minute == 4
+    assert (trip.expected_time - trip.scheduled_time).total_seconds() == 240
 
 
 def test_enrichment_computes_delay_and_category(

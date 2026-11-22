@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Protocol, Self
 from urllib.parse import quote
@@ -21,8 +22,54 @@ from rmg_watcher.ingestion.transitous import TransitousClient
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
 DEFAULT_TIMEOUT_SECONDS = 10.0
 API_KEY_HEADER = "X-Api-Key"
+TIME_FIELDS = ("scheduledTime", "expectedTime")
 
 RawPayload = list[dict[str, Any]]
+
+
+def _parse_time(value: object) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _freshen_departures(records: RawPayload) -> RawPayload:
+    """Move fixture departure times into the near future.
+
+    The JSON fixtures have fixed timestamps, which would make a long-running
+    mock kiosk show departures from the past. The whole batch is shifted by the
+    same amount so delay deltas stay realistic. Unparseable values are left
+    alone so the fixture keeps exercising quarantine handling.
+    """
+    scheduled = [
+        parsed for record in records if (parsed := _parse_time(record.get("scheduledTime")))
+    ]
+    if not scheduled:
+        return records
+
+    earliest = min(scheduled)
+    if earliest.tzinfo is None:
+        earliest = earliest.replace(tzinfo=UTC)
+    zone = earliest.tzinfo
+    target = datetime.now(zone).replace(second=0, microsecond=0) + timedelta(minutes=1)
+    target += timedelta(minutes=(5 - target.minute % 5) % 5)
+    offset = target - earliest
+
+    result: RawPayload = []
+    for record in records:
+        item = dict(record)
+        for field in TIME_FIELDS:
+            parsed = _parse_time(item.get(field))
+            if parsed is None:
+                continue
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=UTC)
+            item[field] = (parsed + offset).isoformat()
+        result.append(item)
+    return result
 
 
 class TransitFetcher(Protocol):
@@ -43,7 +90,12 @@ def _read_json(path: Path) -> Any:
 
 
 class MockTransitClient:
-    """Deterministic client backed by JSON fixtures under ``tests/fixtures``."""
+    """Client backed by realistic JSON fixtures under ``tests/fixtures``.
+
+    Records mirror the normalized shape produced by ``TransitousClient`` and are
+    shifted to the upcoming hour so a mock kiosk shows plausible departures.
+    Two luisenplatz records are deliberately malformed to exercise quarantine.
+    """
 
     def __init__(self, fixtures_dir: Path | None = None) -> None:
         self.fixtures_dir = fixtures_dir or FIXTURES_DIR
@@ -58,11 +110,12 @@ class MockTransitClient:
         payload = _read_json(self.fixtures_dir / "sample_departures.json")
         if not isinstance(payload, list):
             raise ApiError("sample_departures.json must contain a JSON array")
-        return [
+        records = [
             record
             for record in payload
             if isinstance(record, dict) and record.get("stopId") == stop_id
         ]
+        return _freshen_departures(records)
 
 
 class LiveTransitClient:

@@ -7,7 +7,7 @@ a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.11+, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.21.0
+- **Version:** 0.21.1
 
 ## Status
 
@@ -142,8 +142,11 @@ npm run build
 ```
 
 Tests force mock mode through `PYTEST_CURRENT_TEST` and block outbound sockets,
-so the suite never contacts a live API. CI runs the same commands on Python 3.11
-and 3.12 and Node 22.
+so the suite never contacts a live API. Mock departures use the same normalized
+field shape as the Transitous client (including accessibility flags) and are
+shifted to a near-future slot on each read, so the demo board never shows stale
+times. Two fixture records stay deliberately malformed to exercise quarantine.
+CI runs the same commands on Python 3.11 and 3.12 and Node 22.
 
 ### CI and deployment gates
 

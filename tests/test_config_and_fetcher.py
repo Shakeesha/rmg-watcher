@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -119,3 +120,42 @@ def test_fixture_covers_duplicates_and_malformed_records(
 
     assert None in trip_ids
     assert len(trip_ids) != len(set(trip_ids))
+
+
+def test_mock_departures_match_live_record_schema(mock_fetcher: MockTransitClient) -> None:
+    live_fields = {
+        "tripId",
+        "routeId",
+        "stopId",
+        "scheduledTime",
+        "expectedTime",
+        "status",
+        "routeShortName",
+        "routeMode",
+        "wheelchairAccessible",
+    }
+    records = mock_fetcher.fetch_departures("luisenplatz") + mock_fetcher.fetch_departures("hbf")
+
+    assert records
+    for record in records:
+        if "tripId" not in record:
+            continue  # Deliberate quarantine fixture.
+        assert live_fields <= set(record)
+        assert record["status"] in {"on_time", "delayed", "cancelled"}
+        assert isinstance(record["routeShortName"], str)
+        assert isinstance(record["routeMode"], str)
+        assert record["wheelchairAccessible"] is None or isinstance(
+            record["wheelchairAccessible"], bool
+        )
+
+
+def test_mock_departures_are_scheduled_soon(mock_fetcher: MockTransitClient) -> None:
+    now = datetime.now(UTC)
+    times = [
+        datetime.fromisoformat(record["scheduledTime"])
+        for record in mock_fetcher.fetch_departures("luisenplatz")
+        if record["scheduledTime"] != "not-a-timestamp"
+    ]
+
+    assert times
+    assert all(-60 <= (value - now).total_seconds() <= 3600 for value in times)

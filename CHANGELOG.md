@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-11-22
+
+### Fixed
+
+- Mock departures now carry the same normalized fields as live Transitous
+  records, including wheelchair accessibility.
+- Mock timestamps are shifted to a near-future slot on each read instead of
+  staying frozen in the past. The two deliberate malformed fixtures remain for
+  quarantine testing.
+
 ## [0.21.0] - 2026-11-22
 
 ### Added
