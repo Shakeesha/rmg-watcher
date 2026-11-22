@@ -6,7 +6,7 @@ and serves a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.12, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.14.0
+- **Version:** 0.15.0
 
 ## Status
 

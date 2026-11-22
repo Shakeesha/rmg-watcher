@@ -26,6 +26,7 @@
     HealthResponse,
     Metrics,
     NearbyStop,
+    PlaceResult,
     ServiceAlert,
   } from './lib/types'
 
@@ -34,6 +35,7 @@
 
   let stops = $state<NearbyStop[]>([])
   let selectedStopId = $state<string | null>(null)
+  let selectedPlace = $state<PlaceResult | null>(null)
   let nearbyStops = $state<NearbyStop[]>([])
   let nearbyOpen = $state(false)
   let nearbyLoading = $state(false)
@@ -57,7 +59,8 @@
   let disposed = false
 
   const selectedStopName = $derived(
-    stops.find((stop) => stop.stop_id === selectedStopId)?.name ??
+    selectedPlace?.name ??
+      stops.find((stop) => stop.stop_id === selectedStopId)?.name ??
       nearbyStops.find((stop) => stop.stop_id === selectedStopId)?.name ??
       'Transit stop',
   )
@@ -69,6 +72,15 @@
   )
 
   const mapCenter = $derived.by(() => {
+    if (
+      selectedPlace !== null &&
+      selectedStopId === selectedPlace.id
+    ) {
+      return {
+        latitude: selectedPlace.latitude,
+        longitude: selectedPlace.longitude,
+      }
+    }
     const stop = [...stops, ...nearbyStops].find(
       (item) => item.stop_id === selectedStopId,
     )
@@ -147,8 +159,9 @@
       if (metricsResult.status === 'fulfilled') metrics = metricsResult.value
 
       if (
-        selectedStopId === null ||
-        !stops.some((stop) => stop.stop_id === selectedStopId)
+        selectedPlace === null &&
+        (selectedStopId === null ||
+          !stops.some((stop) => stop.stop_id === selectedStopId))
       ) {
         selectedStopId = pickDefaultStop(stops)
       }
@@ -198,10 +211,22 @@
 
   function selectStop(stopId: string): void {
     if (stopId === selectedStopId) return
+    if (selectedPlace?.id !== stopId) selectedPlace = null
     nearbyOpen = false
     nearbyStops = []
     selectedStopId = stopId
     rememberStop(stopId)
+    departures = []
+    loading = true
+    void refresh()
+  }
+
+  function selectPlace(place: PlaceResult): void {
+    nearbyOpen = false
+    nearbyStops = []
+    selectedPlace = place
+    selectedStopId = place.id
+    rememberStop(place.id)
     departures = []
     loading = true
     void refresh()
@@ -322,6 +347,7 @@
       onToggleNearby={() => void toggleNearby()}
       onSelectNearby={(stop) => selectStop(stop.stop_id)}
       onLocate={locate}
+      onSelectPlace={selectPlace}
     />
     {#if nearbyOpen}
       <NearbyMap

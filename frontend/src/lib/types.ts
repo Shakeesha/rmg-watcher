@@ -106,6 +106,15 @@ export interface ServiceAlert {
   stop_id: string | null
 }
 
+export interface PlaceResult {
+  id: string
+  name: string
+  latitude: number
+  longitude: number
+  type: string
+  mode: string | null
+}
+
 export interface FavouriteConnection {
   from: string
   to: string

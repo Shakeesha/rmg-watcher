@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-22
+
+### Added
+
+- Nationwide stop autocomplete backed by a cached Transitous geocoder.
+- Typed From/To fields for connections that accept any stop in Germany.
+
 ## [0.14.0] - 2026-11-22
 
 ### Added

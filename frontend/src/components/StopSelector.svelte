@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { NearbyStop, Stop } from '../lib/types'
+  import { fetchPlaces } from '../lib/api'
+  import type { NearbyStop, PlaceResult, Stop } from '../lib/types'
 
   interface Props {
     stops: Stop[]
@@ -11,6 +12,7 @@
     onToggleNearby: () => void
     onSelectNearby: (stop: NearbyStop) => void
     onLocate: () => void
+    onSelectPlace: (place: PlaceResult) => void
   }
 
   let {
@@ -23,9 +25,44 @@
     onToggleNearby,
     onSelectNearby,
     onLocate,
+    onSelectPlace,
   }: Props = $props()
 
   let query = $state('')
+  let suggestions = $state<PlaceResult[]>([])
+  let searchLoading = $state(false)
+  let searchController: AbortController | null = null
+
+  $effect(() => {
+    const term = query.trim()
+    if (term.length < 2) {
+      suggestions = []
+      return
+    }
+    const timer = window.setTimeout(async () => {
+      searchController?.abort()
+      const controller = new AbortController()
+      searchController = controller
+      searchLoading = true
+      try {
+        suggestions = await fetchPlaces(term, controller.signal)
+      } catch {
+        suggestions = []
+      } finally {
+        searchLoading = false
+      }
+    }, 250)
+    return () => {
+      window.clearTimeout(timer)
+      searchController?.abort()
+    }
+  })
+
+  function choosePlace(place: PlaceResult): void {
+    query = ''
+    suggestions = []
+    onSelectPlace(place)
+  }
 
   const filteredStops = $derived(
     query.trim() === ''
@@ -58,14 +95,40 @@
 
 <section class="stop-selector" aria-label="Choose a stop">
   <span class="selector-label">Stop</span>
-  <input
-    class="stop-search"
-    type="search"
-    placeholder="Search stops"
-    aria-label="Search stops"
-    bind:value={query}
-    data-nav
-  />
+  <div class="search-wrap">
+    <input
+      class="stop-search"
+      type="search"
+      placeholder="Search any stop in Germany"
+      aria-label="Search any stop in Germany"
+      bind:value={query}
+      data-nav
+    />
+
+    {#if query.trim().length >= 2}
+      <div class="suggestions" role="listbox" aria-label="Stop suggestions">
+        {#if searchLoading}
+          <p class="empty">Searching…</p>
+        {:else if suggestions.length === 0}
+          <p class="empty">No stops found.</p>
+        {:else}
+          {#each suggestions as place (place.id)}
+            <button
+              type="button"
+              role="option"
+              aria-selected={selectedStopId === place.id}
+              data-nav
+              onclick={() => choosePlace(place)}
+            >
+              <span class="mode" aria-hidden="true">{modeIcon(place.mode)}</span>
+              <span class="suggestion-name">{place.name}</span>
+              <span class="suggestion-type">{place.type}</span>
+            </button>
+          {/each}
+        {/if}
+      </div>
+    {/if}
+  </div>
 
   <div class="stop-buttons" role="group" aria-label="Configured stops">
     {#each filteredStops as stop (stop.stop_id)}
@@ -154,6 +217,59 @@
     background: #18212b;
     color: var(--color-text);
     font: inherit;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1 1 100%;
+  }
+
+  .suggestions {
+    position: absolute;
+    z-index: 20;
+    top: 100%;
+    right: 0;
+    left: 0;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #2d3a49;
+    border-radius: 10px;
+    background: #10161d;
+    box-shadow: 0 12px 24px rgb(0 0 0 / 45%);
+  }
+
+  .suggestions button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 54px;
+    padding: 0 12px;
+    border: 0;
+    border-bottom: 1px solid #1f2a36;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .suggestions button:hover,
+  .suggestions button:focus-visible {
+    background: #18212b;
+  }
+
+  .suggestion-name {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .suggestion-type {
+    color: var(--color-muted);
+    font-size: 0.72rem;
   }
 
   .stop-buttons {

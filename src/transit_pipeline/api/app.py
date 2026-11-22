@@ -22,6 +22,7 @@ from transit_pipeline.api.schemas import (
     DepartureResponse,
     HealthResponse,
     MetricsResponse,
+    PlaceResponse,
     RouteDelayResponse,
     StopResponse,
     TransferRiskResponse,
@@ -445,6 +446,22 @@ def create_app(
         latitude = lat if lat is not None else app_settings.transitous_home_lat
         longitude = lon if lon is not None else app_settings.transitous_home_lon
         return _suggested_stops(app_settings, latitude, longitude, radius, limit)
+
+    @app.get(
+        "/api/places",
+        response_model=list[PlaceResponse],
+        tags=["stops"],
+    )
+    def places(q: str = Query(default="", min_length=2)) -> list[PlaceResponse]:
+        if app_settings.mock_mode or app_settings.transit_provider != "transitous":
+            return []
+        client = TransitousClient(app_settings)
+        try:
+            return [PlaceResponse(**place) for place in client.search_places(q)]
+        except ApiError:
+            return []
+        finally:
+            client.close()
 
     @app.get(
         "/api/stops/nearby/{stop_id}",

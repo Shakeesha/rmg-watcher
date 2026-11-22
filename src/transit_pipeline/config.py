@@ -139,6 +139,12 @@ class Settings(BaseSettings):
         le=10,
         validation_alias="TRANSITOUS_ALERT_STOPS",
     )
+    transitous_geocode_limit: int = Field(
+        default=6,
+        ge=1,
+        le=10,
+        validation_alias="TRANSITOUS_GEOCODE_LIMIT",
+    )
     transitous_cache_path: Path = Field(
         default=PROJECT_ROOT / "data" / "transitous",
         validation_alias="TRANSITOUS_CACHE_PATH",

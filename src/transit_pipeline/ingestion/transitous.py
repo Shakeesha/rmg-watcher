@@ -300,6 +300,55 @@ class TransitousClient:
         self._write_cache(cache_path, alerts)
         return alerts
 
+    def search_places(self, text: str, *, limit: int | None = None) -> list[dict[str, Any]]:
+        """Return cached autocomplete results for stops and places in Germany."""
+        query = text.strip()
+        if len(query) < 2:
+            return []
+
+        count = limit or self._settings.transitous_geocode_limit
+        digest = hashlib.sha256(
+            f"{query.casefold()}|{count}".encode()
+        ).hexdigest()[:20]
+        cache_path = self._cache_dir / "geocode" / f"{digest}.json"
+        cached = self._read_cache(cache_path, CATALOG_TTL_SECONDS)
+        if cached is not None:
+            return _records(cached)
+
+        try:
+            payload = self._get(
+                "/v1/geocode",
+                params={
+                    "text": query,
+                    "numResults": count,
+                    "language": "de",
+                    "type": "STOP,ADDRESS,POI",
+                },
+            )
+        except ApiError:
+            return []
+
+        result: list[dict[str, Any]] = []
+        for match in _records(payload):
+            identifier, name = match.get("id"), match.get("name")
+            lat, lon = match.get("lat"), match.get("lon")
+            if not isinstance(identifier, str) or not isinstance(name, str):
+                continue
+            if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+                continue
+            result.append(
+                {
+                    "id": identifier,
+                    "name": name,
+                    "latitude": float(lat),
+                    "longitude": float(lon),
+                    "type": str(match.get("type") or "STOP"),
+                    "mode": str(match.get("category") or "").lower() or None,
+                }
+            )
+        self._write_cache(cache_path, result)
+        return result
+
     def search_connections(
         self,
         from_stop: str,

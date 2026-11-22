@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { Connection, FavouriteConnection, Stop } from '../lib/types'
+  import { fetchPlaces } from '../lib/api'
+  import type { Connection, FavouriteConnection, PlaceResult, Stop } from '../lib/types'
 
   interface Props {
     stops: Stop[]
@@ -31,8 +32,83 @@
   let arriveBy = $state(false)
   let expanded = $state<Record<string, boolean>>({})
 
+  let fromText = $state('')
+  let toText = $state('')
+  let fromSuggestions = $state<PlaceResult[]>([])
+  let toSuggestions = $state<PlaceResult[]>([])
+  let fromLoading = $state(false)
+  let toLoading = $state(false)
+  let fromController: AbortController | null = null
+  let toController: AbortController | null = null
+
   $effect(() => {
-    if (selectedStopId && !fromStop) fromStop = selectedStopId
+    const term = fromText.trim()
+    if (term.length < 2 || term === fromStop) {
+      fromSuggestions = []
+      return
+    }
+    const timer = window.setTimeout(async () => {
+      fromController?.abort()
+      const controller = new AbortController()
+      fromController = controller
+      fromLoading = true
+      try {
+        fromSuggestions = await fetchPlaces(term, controller.signal)
+      } catch {
+        fromSuggestions = []
+      } finally {
+        fromLoading = false
+      }
+    }, 250)
+    return () => {
+      window.clearTimeout(timer)
+      fromController?.abort()
+    }
+  })
+
+  $effect(() => {
+    const term = toText.trim()
+    if (term.length < 2 || term === toStop) {
+      toSuggestions = []
+      return
+    }
+    const timer = window.setTimeout(async () => {
+      toController?.abort()
+      const controller = new AbortController()
+      toController = controller
+      toLoading = true
+      try {
+        toSuggestions = await fetchPlaces(term, controller.signal)
+      } catch {
+        toSuggestions = []
+      } finally {
+        toLoading = false
+      }
+    }, 250)
+    return () => {
+      window.clearTimeout(timer)
+      toController?.abort()
+    }
+  })
+
+  function chooseFrom(place: PlaceResult): void {
+    fromStop = place.id
+    fromText = place.name
+    fromSuggestions = []
+  }
+
+  function chooseTo(place: PlaceResult): void {
+    toStop = place.id
+    toText = place.name
+    toSuggestions = []
+  }
+
+  $effect(() => {
+    if (selectedStopId && !fromStop) {
+      fromStop = selectedStopId
+      const stop = stops.find((item) => item.stop_id === selectedStopId)
+      if (stop) fromText = stop.name
+    }
   })
 
   const timeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -62,9 +138,12 @@
   }
 
   function swapStops(): void {
-    const previous = fromStop
+    const previousId = fromStop
+    const previousText = fromText
     fromStop = toStop
-    toStop = previous
+    fromText = toText
+    toStop = previousId
+    toText = previousText
   }
 
   function toLocalInput(date: Date): string {
@@ -126,24 +205,68 @@
   </header>
 
   <div class="search-row">
-    <label>
+    <label class="place-field">
       <span>From</span>
-      <select bind:value={fromStop} data-nav>
-        <option value="">Select a stop</option>
-        {#each stops as stop (stop.stop_id)}
-          <option value={stop.stop_id}>{stop.name}</option>
-        {/each}
-      </select>
+      <input
+        type="search"
+        placeholder="Any stop in Germany"
+        aria-label="From stop"
+        bind:value={fromText}
+        data-nav
+      />
+      {#if fromText.trim().length >= 2 && fromText !== fromStop}
+        <div class="suggestions" role="listbox" aria-label="From suggestions">
+          {#if fromLoading}
+            <p class="empty">Searching…</p>
+          {:else if fromSuggestions.length === 0}
+            <p class="empty">No stops found.</p>
+          {:else}
+            {#each fromSuggestions as place (place.id)}
+              <button
+                type="button"
+                role="option"
+                aria-selected={fromStop === place.id}
+                data-nav
+                onclick={() => chooseFrom(place)}
+              >
+                {place.name}
+              </button>
+            {/each}
+          {/if}
+        </div>
+      {/if}
     </label>
 
-    <label>
+    <label class="place-field">
       <span>To</span>
-      <select bind:value={toStop} data-nav>
-        <option value="">Select a stop</option>
-        {#each stops as stop (stop.stop_id)}
-          <option value={stop.stop_id}>{stop.name}</option>
-        {/each}
-      </select>
+      <input
+        type="search"
+        placeholder="Any stop in Germany"
+        aria-label="To stop"
+        bind:value={toText}
+        data-nav
+      />
+      {#if toText.trim().length >= 2 && toText !== toStop}
+        <div class="suggestions" role="listbox" aria-label="To suggestions">
+          {#if toLoading}
+            <p class="empty">Searching…</p>
+          {:else if toSuggestions.length === 0}
+            <p class="empty">No stops found.</p>
+          {:else}
+            {#each toSuggestions as place (place.id)}
+              <button
+                type="button"
+                role="option"
+                aria-selected={toStop === place.id}
+                data-nav
+                onclick={() => chooseTo(place)}
+              >
+                {place.name}
+              </button>
+            {/each}
+          {/if}
+        </div>
+      {/if}
     </label>
 
     <label>
@@ -215,6 +338,9 @@
           onclick={() => {
             fromStop = favourite.from
             toStop = favourite.to
+            const parts = favourite.label.split(' → ')
+            fromText = parts[0] ?? favourite.from
+            toText = parts[1] ?? favourite.to
             onSelectFavourite(favourite)
           }}
         >
@@ -366,7 +492,6 @@
     text-transform: uppercase;
   }
 
-  select,
   input {
     width: 100%;
     min-height: 54px;
@@ -376,6 +501,45 @@
     background: var(--color-surface);
     color: var(--color-text);
     font: inherit;
+  }
+
+  .place-field {
+    position: relative;
+  }
+
+  .suggestions {
+    position: absolute;
+    z-index: 20;
+    top: 100%;
+    right: 0;
+    left: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #2d3a49;
+    border-radius: 10px;
+    background: #10161d;
+    box-shadow: 0 12px 24px rgb(0 0 0 / 45%);
+  }
+
+  .suggestions button {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 12px;
+    border: 0;
+    border-bottom: 1px solid #1f2a36;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .suggestions .empty {
+    margin: 0;
+    padding: 12px;
+    color: var(--color-muted);
+    font-size: 0.82rem;
   }
 
   .action-row {

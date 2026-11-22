@@ -6,6 +6,7 @@ import type {
   HealthResponse,
   Metrics,
   NearbyStop,
+  PlaceResult,
   ServiceAlert,
   Stop,
 } from './types'
@@ -73,6 +74,16 @@ export function fetchSuggestedStops(
   }
   const suffix = query.toString()
   return getJson<NearbyStop[]>(`/stops/suggested${suffix ? `?${suffix}` : ''}`, signal)
+}
+
+export function fetchPlaces(
+  query: string,
+  signal?: AbortSignal,
+): Promise<PlaceResult[]> {
+  return getJson<PlaceResult[]>(
+    `/places?q=${encodeURIComponent(query)}`,
+    signal,
+  )
 }
 
 export function fetchAlerts(signal?: AbortSignal): Promise<ServiceAlert[]> {

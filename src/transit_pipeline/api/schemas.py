@@ -75,9 +75,19 @@ class TransferRiskResponse(BaseModel):
     at_risk: bool
 
 
+class PlaceResponse(BaseModel):
+    """An autocomplete result from Transitous geocoding."""
+
+    id: str
+    name: str
+    latitude: float
+    longitude: float
+    type: str
+    mode: str | None = None
+
+
 class AlertResponse(BaseModel):
     """A service alert affecting a nearby stop."""
-
     code: str
     header: str
     description: str
