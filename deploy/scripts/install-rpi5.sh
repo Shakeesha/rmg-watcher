@@ -82,6 +82,10 @@ if [[ "${SOURCE_DIR}" != "${APP_DIR}" ]]; then
     -cf - . | tar -C "${APP_DIR}" -xf -
 fi
 
+# The archive may have been extracted as root, so hand the tree to the service
+# user before any step that writes there (venv creation, pip, .env, data dirs).
+chown -R "${SERVICE_USER}:${SERVICE_USER}" "${APP_DIR}"
+
 if [[ ! -f "${APP_DIR}/.venv/bin/python" ]]; then
   sudo -u "${SERVICE_USER}" python3 -m venv "${APP_DIR}/.venv"
 fi
@@ -97,7 +101,6 @@ sudo -u "${SERVICE_USER}" mkdir -p \
   "${APP_DIR}/data/raw" \
   "${APP_DIR}/data/quarantine" \
   "${APP_DIR}/data/transitous/tiles"
-chown -R "${SERVICE_USER}:${SERVICE_USER}" "${APP_DIR}"
 
 install -m 0644 "${APP_DIR}/deploy/systemd/"*.service \
   "${APP_DIR}/deploy/systemd/"*.timer /etc/systemd/system/

@@ -42,6 +42,12 @@ def test_installer_check_mode_is_independent_of_cwd(tmp_path: Path) -> None:
     assert result.stdout.startswith("Release layout OK")
 
 
+def test_installer_hands_tree_to_service_user_before_writing() -> None:
+    script = INSTALLER.read_text(encoding="utf-8")
+
+    assert script.index("chown -R") < script.index("python3 -m venv")
+
+
 def test_installer_check_mode_rejects_missing_release(tmp_path: Path) -> None:
     script_dir = tmp_path / "deploy" / "scripts"
     script_dir.mkdir(parents=True)

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.6] - 2026-11-23
+
+### Fixed
+
+- The Pi installer now transfers ownership of the install directory to the
+  service user before creating the virtual environment, avoiding `Permission
+  denied` when the archive was extracted as root.
+
 ## [0.21.5] - 2026-11-23
 
 ### Added
