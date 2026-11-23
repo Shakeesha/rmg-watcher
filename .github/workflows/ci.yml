@@ -170,8 +170,7 @@ jobs:
             deploy/systemd/rmg-watcher-kiosk.service \
             docs/architecture.md \
             docs/hardware_ui.md \
-            docs/schema.md \
-            data/german-stops.json; do
+            docs/schema.md; do
             test -f "$path" || { echo "Missing: $path"; exit 1; }
           done
 
@@ -206,6 +205,21 @@ jobs:
         run: |
           npm run build
           npm run build:stops
+
+      - name: Verify generated stop catalog
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          catalog = Path("data/german-stops.json")
+          if not catalog.is_file():
+              raise SystemExit("npm run build:stops did not create data/german-stops.json")
+          stops = json.loads(catalog.read_text(encoding="utf-8"))
+          if not isinstance(stops, list) or not stops:
+              raise SystemExit("data/german-stops.json must be a non-empty JSON array")
+          print(f"stop catalog contains {len(stops)} stops")
+          PY
 
       - name: Create Raspberry Pi release archive
         run: |

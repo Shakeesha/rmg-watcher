@@ -10,6 +10,7 @@ export const METRES_PER_KILOMETRE = 1000
 // Labels and status values
 export const FAVOURITE_LABEL_SEPARATOR = ' → '
 export const STATUS_CANCELLED = 'cancelled'
+export const DELAY_CATEGORY_SEVERE = 'severe'
 
 // Default limits
 export const DEFAULT_DEPARTURE_LIMIT = 20

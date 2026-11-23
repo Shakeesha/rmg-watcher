@@ -1,4 +1,4 @@
-// Typed fetch client for /api/health, /api/departures, and /api/metrics.
+// Typed fetch client for the RMG-Watcher /api endpoints used by the kiosk UI.
 
 import type {
   Connection,
@@ -8,7 +8,6 @@ import type {
   NearbyStop,
   PlaceResult,
   ServiceAlert,
-  Stop,
 } from './types'
 import {
   DEFAULT_CONNECTION_LIMIT,
@@ -33,19 +32,6 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 
 export function fetchHealth(signal?: AbortSignal): Promise<HealthResponse> {
   return getJson<HealthResponse>('/health', signal)
-}
-
-export function fetchStops(signal?: AbortSignal): Promise<Stop[]> {
-  return getJson<Stop[]>('/stops', signal)
-}
-
-export function fetchDepartures(
-  stopId: string,
-  signal?: AbortSignal,
-  limit = DEFAULT_DEPARTURE_LIMIT,
-): Promise<Departure[]> {
-  const path = `/departures/${encodeURIComponent(stopId)}?limit=${limit}`
-  return getJson<Departure[]>(path, signal)
 }
 
 export function fetchNearbyStops(

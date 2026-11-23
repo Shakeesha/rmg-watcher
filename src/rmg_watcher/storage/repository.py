@@ -159,6 +159,7 @@ class TransitRepository:
                     batch_id, record_hash, reason, payload, quarantined_at
                 )
                 VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (batch_id, record_hash) DO NOTHING
                 """,
                 rows,
             )

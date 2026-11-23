@@ -45,11 +45,23 @@ CREATE TABLE IF NOT EXISTS quarantine (
     record_hash     TEXT NOT NULL,
     reason          TEXT NOT NULL,
     payload         TEXT NOT NULL,
-    quarantined_at  TEXT NOT NULL
+    quarantined_at  TEXT NOT NULL,
+    UNIQUE (batch_id, record_hash)
+);
+
+-- Existing databases keep their original table definition, so upgrade them
+-- explicitly: collapse any rows that predate the uniqueness rule, then add the
+-- index that INSERT ... ON CONFLICT relies on.
+DELETE FROM quarantine
+WHERE quarantine_id NOT IN (
+    SELECT MIN(quarantine_id) FROM quarantine GROUP BY batch_id, record_hash
 );
 
 CREATE INDEX IF NOT EXISTS idx_quarantine_batch
     ON quarantine (batch_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_quarantine_batch_hash
+    ON quarantine (batch_id, record_hash);
 
 CREATE TABLE IF NOT EXISTS pipeline_runs (
     run_id              TEXT PRIMARY KEY,

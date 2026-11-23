@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Barrier, Thread
 from typing import Any
 
 import httpx
@@ -14,6 +17,7 @@ import respx
 
 from rmg_watcher.config import Settings
 from rmg_watcher.domain.exceptions import ApiError
+from rmg_watcher.ingestion import transitous
 from rmg_watcher.ingestion.transitous import TransitousClient
 
 BASE = "https://api.transitous.org/api"
@@ -190,3 +194,108 @@ def test_departures_use_stale_cache_when_api_fails(
         stale = client.fetch_departures("stop-x")
 
     assert stale == fresh
+
+
+def test_cached_catalog_refreshes_when_file_changes(tmp_path: Path) -> None:
+    transitous._load_cached_stops.cache_clear()
+    transitous._cached_stop_index.cache_clear()
+    path = tmp_path / "stops.json"
+
+    def write(stop_id: str) -> None:
+        payload = [{"stopId": stop_id, "name": stop_id, "latitude": 1.0, "longitude": 2.0}]
+        path.write_text(json.dumps({"payload": payload}), encoding="utf-8")
+
+    write("old")
+    mtime = path.stat().st_mtime_ns
+    assert [stop["stopId"] for stop in transitous.load_cached_stops(path)] == ["old"]
+    assert "old" in transitous.cached_stop_index(path)
+
+    write("new")
+    os.utime(path, ns=(mtime + 1_000_000_000, mtime + 1_000_000_000))
+    assert [stop["stopId"] for stop in transitous.load_cached_stops(path)] == ["new"]
+    index = transitous.cached_stop_index(path)
+    assert "new" in index and "old" not in index
+
+
+def test_plan_quota_is_atomic(transitous_settings: Settings) -> None:
+    settings = transitous_settings.model_copy(update={"transitous_plan_limit_per_day": 3})
+    client = TransitousClient(settings)
+    barrier = Barrier(8)
+    failures: list[ApiError] = []
+    failures_lock = threading.Lock()
+
+    def charge() -> None:
+        barrier.wait()
+        try:
+            client._charge_plan_request()
+        except ApiError as exc:
+            with failures_lock:
+                failures.append(exc)
+
+    threads = [Thread(target=charge) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(failures) == 5
+    counter = settings.transitous_cache_path / "plan-counter.json"
+    document = json.loads(counter.read_text(encoding="utf-8"))
+    assert document["payload"] == {"date": datetime.now(UTC).date().isoformat(), "count": 3}
+
+
+@respx.mock
+def test_failed_plan_search_does_not_consume_quota(transitous_settings: Settings) -> None:
+    settings = transitous_settings.model_copy(update={"transitous_plan_limit_per_day": 1})
+    route = respx.get(f"{BASE}/v6/plan").mock(return_value=httpx.Response(502))
+    now = datetime(2026, 11, 22, 10, 7, tzinfo=UTC)
+    counter = settings.transitous_cache_path / "plan-counter.json"
+
+    with TransitousClient(settings) as client:
+        with pytest.raises(ApiError):
+            client.search_connections("a", "b", at=now)
+        assert json.loads(counter.read_text(encoding="utf-8"))["payload"]["count"] == 0
+
+        route.mock(return_value=httpx.Response(200, json={"itineraries": []}))
+        assert client.search_connections("a", "b", at=now) == []
+        assert json.loads(counter.read_text(encoding="utf-8"))["payload"]["count"] == 1
+
+
+@respx.mock
+def test_realtime_status_derives_from_delta(transitous_settings: Settings) -> None:
+    delayed = _stop_time("trip-delayed")
+    equal = _stop_time("trip-equal")
+    equal["place"]["departure"] = equal["place"]["scheduledDeparture"]
+    early = _stop_time("trip-early")
+    early["place"]["departure"] = "2026-11-22T09:58:00Z"
+    missing = _stop_time("trip-missing")
+    missing["place"]["departure"] = None
+    respx.get(f"{BASE}/v6/stoptimes").mock(
+        return_value=httpx.Response(
+            200,
+            json={"stopTimes": [delayed, equal, early, missing]},
+        )
+    )
+
+    with TransitousClient(transitous_settings) as client:
+        records = client.fetch_departures("de:06411:4734")
+
+    by_trip = {record["tripId"]: record for record in records}
+    assert by_trip["trip-delayed"]["status"] == "delayed"
+    assert by_trip["trip-equal"]["status"] == "on_time"
+    assert by_trip["trip-early"]["status"] == "on_time"
+    assert by_trip["trip-missing"]["status"] == "on_time"
+    assert by_trip["trip-missing"]["expectedTime"] is None
+
+
+def test_read_cache_normalizes_naive_timestamps(transitous_settings: Settings) -> None:
+    now = datetime(2026, 11, 22, 10, 5, tzinfo=UTC)
+    client = TransitousClient(transitous_settings, now=lambda: now)
+    path = transitous_settings.transitous_cache_path / "naive.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"fetched_at": "2026-11-22T10:00:00", "payload": [1]}),
+        encoding="utf-8",
+    )
+
+    assert client._read_cache(path, 600) == [1]

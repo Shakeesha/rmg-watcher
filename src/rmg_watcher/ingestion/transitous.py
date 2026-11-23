@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -42,6 +43,10 @@ CATALOG_TTL_SECONDS = 24 * MINUTES_PER_HOUR * SECONDS_PER_MINUTE
 REQUEST_TIMEOUT_SECONDS = 10.0
 TRANSITOUS_RETRY_POLICY = RetryPolicy(max_attempts=2, base_delay=1.0, max_delay=1.0)
 
+# The API serves many short-lived client instances from worker threads, so the
+# daily plan counter must be guarded process-wide rather than per client.
+_PLAN_QUOTA_LOCK = threading.Lock()
+
 
 def _records(value: object) -> list[dict[str, Any]]:
     """Return only dictionary items, ignoring malformed source entries."""
@@ -60,17 +65,22 @@ def distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
     return int(2 * radius * math.asin(math.sqrt(h)))
 
 
-@lru_cache(maxsize=2)
-def cached_stop_index(cache_path: Path) -> dict[str, dict[str, Any]]:
-    """Return the regional catalog indexed by stop ID."""
-    return {
-        str(stop["stopId"]): stop for stop in load_cached_stops(cache_path) if stop.get("stopId")
-    }
+def _catalog_mtime_ns(cache_path: Path) -> int:
+    """Return the catalog file's modification time, or 0 when unavailable."""
+    try:
+        return cache_path.stat().st_mtime_ns
+    except OSError:
+        return 0
 
 
 @lru_cache(maxsize=2)
-def load_cached_stops(cache_path: Path) -> list[dict[str, Any]]:
-    """Read and cache the regional stop catalog without an API call."""
+def _load_cached_stops(cache_path: Path, mtime_ns: int) -> list[dict[str, Any]]:
+    """Read the catalog, caching on both path and modification time.
+
+    ``mtime_ns`` is part of the key: the pipeline rewrites the catalog daily,
+    and the long-lived API process must observe that change. The public
+    wrapper supplies it so existing call sites stay unchanged.
+    """
     try:
         document = json.loads(cache_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -78,6 +88,36 @@ def load_cached_stops(cache_path: Path) -> list[dict[str, Any]]:
     if not isinstance(document, dict):
         return []
     return _records(document.get("payload"))
+
+
+def load_cached_stops(cache_path: Path) -> list[dict[str, Any]]:
+    """Read and cache the regional stop catalog without an API call."""
+    return _load_cached_stops(cache_path, _catalog_mtime_ns(cache_path))
+
+
+@lru_cache(maxsize=2)
+def _cached_stop_index(cache_path: Path, mtime_ns: int) -> dict[str, dict[str, Any]]:
+    return {
+        str(stop["stopId"]): stop
+        for stop in _load_cached_stops(cache_path, mtime_ns)
+        if stop.get("stopId")
+    }
+
+
+def cached_stop_index(cache_path: Path) -> dict[str, dict[str, Any]]:
+    """Return the regional catalog indexed by stop ID, refreshed on file change."""
+    return _cached_stop_index(cache_path, _catalog_mtime_ns(cache_path))
+
+
+def _parse_iso_time(value: object) -> datetime | None:
+    """Parse an ISO-8601 timestamp, treating naive values as UTC."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
 
 
 class TransitousClient:
@@ -366,53 +406,67 @@ class TransitousClient:
             return _records(cached)
 
         self._charge_plan_request()
-        payload = self._get(
-            "/v6/plan",
-            params={
-                "fromPlace": from_stop,
-                "toPlace": to_stop,
-                "time": moment.isoformat(),
-                "arriveBy": arrive_by,
-                "numItineraries": limit,
-                "maxTransfers": DEFAULT_MAX_TRANSFERS,
-                "searchWindow": DEFAULT_SEARCH_WINDOW_SECONDS,
-                "detailedLegs": False,
-                "withFares": False,
-                "realtimeMode": "REALTIME",
-                "language": LANGUAGE,
-            },
-        )
+        try:
+            payload = self._get(
+                "/v6/plan",
+                params={
+                    "fromPlace": from_stop,
+                    "toPlace": to_stop,
+                    "time": moment.isoformat(),
+                    "arriveBy": arrive_by,
+                    "numItineraries": limit,
+                    "maxTransfers": DEFAULT_MAX_TRANSFERS,
+                    "searchWindow": DEFAULT_SEARCH_WINDOW_SECONDS,
+                    "detailedLegs": False,
+                    "withFares": False,
+                    "realtimeMode": "REALTIME",
+                    "language": LANGUAGE,
+                },
+            )
+        except ApiError:
+            # A failed upstream call must not spend a scarce daily request.
+            self._refund_plan_request()
+            raise
         if not isinstance(payload, dict):
+            self._refund_plan_request()
             raise ApiError("Unexpected Transitous plan payload")
         itineraries = _records(payload.get("itineraries"))
         self._write_cache(cache_path, itineraries)
         return itineraries
 
-    def _charge_plan_request(self) -> None:
-        """Enforce a daily cap on the resource-heavy plan endpoint."""
-        counter_path = self._cache_dir / "plan-counter.json"
-        today = self._now().date().isoformat()
-        count = 0
+    def _read_plan_count(self, counter_path: Path, today: str) -> int:
+        """Return today's reserved request count from the counter file."""
         try:
             document = json.loads(counter_path.read_text(encoding="utf-8"))
-            body = document.get("payload", document) if isinstance(document, dict) else None
-            if isinstance(body, dict) and body.get("date") == today:
-                value = body.get("count")
-                if isinstance(value, int):
-                    count = value
         except (OSError, json.JSONDecodeError):
-            pass
+            return 0
+        body = document.get("payload", document) if isinstance(document, dict) else None
+        if not isinstance(body, dict) or body.get("date") != today:
+            return 0
+        value = body.get("count")
+        return value if isinstance(value, int) else 0
 
-        if count >= self._settings.transitous_plan_limit_per_day:
-            raise ApiError(
-                "Daily connection search limit reached; "
-                "try again tomorrow or raise TRANSITOUS_PLAN_LIMIT_PER_DAY"
-            )
+    def _charge_plan_request(self) -> None:
+        """Atomically reserve one request against the daily plan-endpoint cap."""
+        counter_path = self._cache_dir / "plan-counter.json"
+        today = self._now().date().isoformat()
+        with _PLAN_QUOTA_LOCK:
+            count = self._read_plan_count(counter_path, today)
+            if count >= self._settings.transitous_plan_limit_per_day:
+                raise ApiError(
+                    "Daily connection search limit reached; "
+                    "try again tomorrow or raise TRANSITOUS_PLAN_LIMIT_PER_DAY"
+                )
+            self._write_cache(counter_path, {"date": today, "count": count + 1})
 
-        self._write_cache(
-            counter_path,
-            {"date": today, "count": count + 1},
-        )
+    def _refund_plan_request(self) -> None:
+        """Return a reservation when the upstream plan request fails."""
+        counter_path = self._cache_dir / "plan-counter.json"
+        today = self._now().date().isoformat()
+        with _PLAN_QUOTA_LOCK:
+            count = self._read_plan_count(counter_path, today)
+            if count > 0:
+                self._write_cache(counter_path, {"date": today, "count": count - 1})
 
     def _get(self, path: str, *, params: dict[str, str | int | bool]) -> object:
         url = f"{self._base_url}{path}"
@@ -465,7 +519,19 @@ class TransitousClient:
         cancelled = bool(
             stop_time.get("cancelled") or stop_time.get("tripCancelled") or place.get("cancelled")
         )
-        status = "cancelled" if cancelled else ("delayed" if real_time else "on_time")
+        scheduled_at = _parse_iso_time(scheduled)
+        expected_at = _parse_iso_time(expected_value)
+        delta_seconds = (
+            int((expected_at - scheduled_at).total_seconds())
+            if scheduled_at is not None and expected_at is not None
+            else None
+        )
+        if cancelled:
+            status = "cancelled"
+        elif delta_seconds is not None and delta_seconds > 0:
+            status = "delayed"
+        else:
+            status = "on_time"
         mode = stop_time.get("mode")
         short_name = stop_time.get("routeShortName") or stop_time.get("displayName")
 
@@ -498,6 +564,8 @@ class TransitousClient:
             fetched = datetime.fromisoformat(fetched_at)
         except ValueError:
             return None
+        if fetched.tzinfo is None:
+            fetched = fetched.replace(tzinfo=UTC)
         if (self._now() - fetched).total_seconds() > ttl_seconds:
             return None
         return document.get("payload")

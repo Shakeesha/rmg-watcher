@@ -8,7 +8,7 @@ so the Pi needs no Node.js runtime after deployment.
 
 ## Layout
 
-- **Top bar** — product mark and three touch buttons: Live, Delays, Transfers.
+- **Top bar** — product mark and four touch buttons: Live, Delays, Connections, Alerts.
 - **Stop selector** — shown only in the Live view; remembers the last selected
   stop in local storage and defaults to `luisenplatz` when available.
 - **Status banner** — connection, stale-data, database, pipeline, mock-mode,
@@ -48,12 +48,13 @@ buttons on the device.
 | PageUp | Previous view. |
 | Escape | Return to the Live view. |
 
-The three view buttons, stop chips, and any focused control are all reachable
+The four view buttons, stop chips, and any focused control are all reachable
 with a finger. There is no GPIO navigation service in the deployment.
 
 ## Polling
 
-The root component refreshes health, stops, metrics, and the selected stop's
-departures every 15 seconds. The browser's online/offline events trigger an
+The root component refreshes health, metrics, service alerts, and the selected
+stop's departures every 15 seconds; nearby stops are suggested from the cached
+catalog on load or after **Locate**. The browser's online/offline events trigger an
 immediate refresh when connectivity returns. Failed requests leave the last
 known data visible and switch the status banner to an error state.

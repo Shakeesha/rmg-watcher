@@ -7,7 +7,7 @@ a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.11+, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.21.2
+- **Version:** 0.21.3
 
 ## Status
 
@@ -72,7 +72,7 @@ Rhein-Main-Gebiet. To switch from mock data:
    TRANSITOUS_PLAN_LIMIT_PER_DAY=30
    TRANSITOUS_PLAN_CACHE_MINUTES=30
    TRANSITOUS_NEARBY_RADIUS_M=1000
-   TRANSITOUS_NEARBY_LIMIT=8
+   TRANSITOUS_NEARBY_LIMIT=3
    ```
 
 3. Run `rmg-watcher run` and serve the UI as above.
@@ -122,9 +122,17 @@ OpenStreetMap attribution. Consider
 | Endpoint | Description |
 | --- | --- |
 | `GET /api/health` | Database, pipeline, mock-mode, and version status. |
-| `GET /api/stops` | Configured stops sorted by name. |
-| `GET /api/departures/{stop_id}` | Departures for a stop with delay information. |
+| `GET /api/stops` | Stops stored by the pipeline, sorted by name. |
+| `GET /api/stops/suggested` | Nearby stops from the cached regional catalog (no external request). |
+| `GET /api/stops/nearby/{stop_id}` | Stops around a given stop, within `TRANSITOUS_NEARBY_RADIUS_M`. |
+| `GET /api/places` | German stop autocomplete, local catalog then cached geocoder. |
+| `GET /api/places/resolve` | Resolve a catalog stop to its Transitous ID, cached. |
+| `GET /api/departures/{stop_id}` | Stored departures for a stop with delay information. |
+| `GET /api/departures/live/{stop_id}` | Cached live departures/arrivals from Transitous. |
+| `GET /api/alerts` | Cached service alerts for the nearest stops. |
+| `GET /api/connections` | Cached journeys between two stops, with a daily request cap. |
 | `GET /api/metrics` | Punctuality, percentiles, top delayed routes, transfer risks. |
+| `GET /api/tiles/{z}/{x}/{y}.png` | Cached OpenStreetMap tile proxy for the nearby map. |
 
 Interactive OpenAPI docs are available at `/docs`.
 

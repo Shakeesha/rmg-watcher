@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.3] - 2026-11-23
+
+### Fixed
+
+- CI no longer requires the generated `data/german-stops.json` in a fresh
+  checkout; the packaging job validates it after `npm run build:stops` instead.
+- The regional stop catalog cache now invalidates when the file changes on disk.
+- Daily plan requests are reserved atomically and refunded when upstream fails.
+- Quarantine rows are unique per batch and payload hash, preventing unbounded
+  growth from the 60-second pipeline timer.
+- Realtime arrivals are labelled delayed only when the actual estimate is later
+  than the scheduled time; naive cache timestamps no longer raise TypeError.
+- Nearby and connection requests are abortable and ignore stale responses.
+- Corrected documentation for views, endpoints, retry behavior, and nearby limit.
+
 ## [0.21.2] - 2026-11-23
 
 ### Fixed

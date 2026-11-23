@@ -28,7 +28,8 @@ storage/repository.py (idempotent ON CONFLICT DO UPDATE)
 quality/checks.py -> pipeline_runs.status
         |
         v
-api/app.py  -- /api/health, /api/stops, /api/departures/{stop_id}, /api/metrics
+api/app.py  -- /api/health, /api/stops, /api/departures, /api/connections,
+              /api/metrics, /api/alerts, /api/places, /api/tiles
         |
         v
 frontend/dist (Svelte 5 kiosk) -- polls every 15 seconds
@@ -119,8 +120,10 @@ Transitous is a community service, so this client is deliberately quiet:
 
 ## Reliability
 
-- Both live clients use strict timeouts; the generic client also retries HTTP
-  429 and transient 5xx responses with exponential backoff and `Retry-After`.
+- Both live clients use strict timeouts and the shared retry helper. The generic
+  client retries HTTP 429 and transient 5xx with exponential backoff and
+  `Retry-After`; the Transitous client allows one retry of transient failures to
+  respect the usage policy.
 - Fact rows are keyed by `(trip_id, stop_id)`, so repeated batches update in
   place instead of creating duplicates.
 - Quality gates reconcile raw, valid, deduplicated, loaded, and quarantined

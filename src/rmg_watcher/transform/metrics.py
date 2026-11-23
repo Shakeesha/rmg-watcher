@@ -63,7 +63,7 @@ def punctuality_rate(
     *,
     threshold_seconds: int = PUNCTUALITY_THRESHOLD_SECONDS,
 ) -> float:
-    """Return the share of non-cancelled events within the delay threshold."""
+    """Return the share of all events that are non-canceled and within the delay threshold."""
     if not events:
         return 0.0
     punctual = sum(

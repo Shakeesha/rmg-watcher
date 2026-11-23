@@ -20,8 +20,10 @@
   import {
     DEFAULT_CONNECTION_LIMIT,
     DEFAULT_DEPARTURE_LIMIT,
+    DELAY_CATEGORY_SEVERE,
     GEOLOCATION_MAX_AGE_MS,
     GEOLOCATION_TIMEOUT_MS,
+    STATUS_CANCELLED,
   } from './lib/constants'
   import { loadFavourites, saveFavourites } from './lib/favourites'
   import { activeView, installNavigation } from './lib/navigation'
@@ -63,6 +65,8 @@
 
   let refreshController: AbortController | null = null
   let suggestController: AbortController | null = null
+  let nearbyController: AbortController | null = null
+  let connectionController: AbortController | null = null
   let disposed = false
 
   const selectedStopName = $derived(
@@ -79,12 +83,14 @@
   )
 
   const serviceWarning = $derived.by(() => {
-    const cancelled = departures.filter((item) => item.status === 'cancelled').length
+    const cancelled = departures.filter(
+      (item) => item.status === STATUS_CANCELLED,
+    ).length
     if (cancelled > 0) {
       return `${cancelled} cancelled departure${cancelled === 1 ? '' : 's'}`
     }
     const severe = departures.filter(
-      (item) => item.delay_category === 'severe',
+      (item) => item.delay_category === DELAY_CATEGORY_SEVERE,
     ).length
     if (severe > 0) return `${severe} severe delay${severe === 1 ? '' : 's'}`
     return null
@@ -248,11 +254,18 @@
     void refresh()
   }
 
+  function closeNearby(): void {
+    nearbyController?.abort()
+    nearbyController = null
+    nearbyOpen = false
+    nearbyStops = []
+    nearbyLoading = false
+  }
+
   function selectStop(stopId: string): void {
     if (stopId === selectedStopId) return
     if (selectedPlace?.id !== stopId) selectedPlace = null
-    nearbyOpen = false
-    nearbyStops = []
+    closeNearby()
     selectedStopId = stopId
     rememberStop(stopId)
     departures = []
@@ -261,8 +274,7 @@
   }
 
   function selectPlace(place: PlaceResult): void {
-    nearbyOpen = false
-    nearbyStops = []
+    closeNearby()
     selectedPlace = place
     selectedStopId = place.id
     rememberStop(place.id)
@@ -273,23 +285,31 @@
 
   async function toggleNearby(): Promise<void> {
     if (nearbyOpen) {
-      nearbyOpen = false
-      nearbyStops = []
+      closeNearby()
       return
     }
 
     const anchor = selectedStopId
     if (anchor === null) return
 
+    nearbyController?.abort()
+    const controller = new AbortController()
+    nearbyController = controller
     nearbyOpen = true
     nearbyLoading = true
     nearbyStops = []
     try {
-      nearbyStops = await fetchNearbyStops(anchor)
+      const nextStops = await fetchNearbyStops(anchor, controller.signal)
+      if (controller.signal.aborted || disposed) return
+      nearbyStops = nextStops
     } catch (caught) {
+      if (isAbortError(caught) || disposed) return
       error = caught instanceof Error ? caught.message : 'Unable to load nearby stops'
     } finally {
-      nearbyLoading = false
+      if (nearbyController === controller) {
+        nearbyController = null
+        nearbyLoading = false
+      }
     }
   }
 
@@ -316,25 +336,34 @@
     time?: string,
     arriveBy = false,
   ): Promise<void> {
+    connectionController?.abort()
+    const controller = new AbortController()
+    connectionController = controller
     connectionLoading = true
     connectionError = null
     connections = []
     try {
-      connections = await fetchConnections(
+      const nextConnections = await fetchConnections(
         from,
         to,
-        undefined,
+        controller.signal,
         DEFAULT_CONNECTION_LIMIT,
         time,
         arriveBy,
       )
+      if (controller.signal.aborted || disposed) return
+      connections = nextConnections
     } catch (caught) {
+      if (isAbortError(caught) || disposed) return
       const message = caught instanceof Error ? caught.message : 'Unable to plan connections'
       connectionError = /API 5\d\d/.test(message)
         ? 'Connection lookup is temporarily unavailable. Please try again.'
         : message
     } finally {
-      connectionLoading = false
+      if (connectionController === controller) {
+        connectionController = null
+        connectionLoading = false
+      }
     }
   }
 
@@ -380,6 +409,8 @@
       window.removeEventListener('offline', handleOffline)
       refreshController?.abort()
       suggestController?.abort()
+      nearbyController?.abort()
+      connectionController?.abort()
       stopNavigation()
     }
   })

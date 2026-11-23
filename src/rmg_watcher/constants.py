@@ -40,4 +40,3 @@ STOP_CATALOG_FILE = "stops.json"
 # Cached raster map tiles
 OSM_TILE_URL = "https://tile.openstreetmap.org"
 TILE_CACHE_DAYS = 7
-TILE_SIZE_PX = 256
