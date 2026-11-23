@@ -2,11 +2,17 @@
 # Install a packaged rmg-watcher release on Raspberry Pi OS Bookworm (64-bit).
 set -euo pipefail
 
+CHECK_ONLY=false
+if [[ "${1:-}" == "--check" ]]; then
+  CHECK_ONLY=true
+  shift
+fi
+
 APP_DIR="${1:-/opt/rmg-watcher}"
 SERVICE_USER="${SERVICE_USER:-transit}"
 ENABLE_KIOSK="${ENABLE_KIOSK:-false}"
 
-if [[ "${EUID}" -ne 0 ]]; then
+if [[ "${CHECK_ONLY}" != "true" && "${EUID}" -ne 0 ]]; then
   echo "Run this script as root (sudo)." >&2
   exit 1
 fi
@@ -16,6 +22,13 @@ SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 if [[ ! -f "${SOURCE_DIR}/pyproject.toml" ]]; then
   echo "No release found in ${SOURCE_DIR}." >&2
   exit 1
+fi
+
+# --check validates the release layout without changing the system. CI and the
+# test suite use it to catch path regressions before a release is published.
+if [[ "${CHECK_ONLY}" == "true" ]]; then
+  echo "Release layout OK: ${SOURCE_DIR}"
+  exit 0
 fi
 
 if [[ "$(uname -m)" != "aarch64" ]]; then

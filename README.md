@@ -7,7 +7,7 @@ a small-screen Svelte UI from a single FastAPI process.
 - **Backend:** Python 3.11+, FastAPI, SQLite (WAL), httpx, Pydantic v2
 - **Frontend:** Svelte 5 + TypeScript + Vite, compiled to static assets
 - **Deployment:** systemd units for the Pi 5, touch-only kiosk, optional Compose image
-- **Version:** 0.21.4
+- **Version:** 0.21.5
 
 ## Status
 
@@ -205,7 +205,9 @@ sudo bash /opt/rmg-watcher/deploy/scripts/install-rpi5.sh /opt/rmg-watcher
 The install script installs system packages, creates the `transit` user and
 virtual environment, copies the .env template, prepares runtime directories,
 installs the systemd units, and enables the API and pipeline timer. No Node.js
-is needed on the Pi because the frontend is prebuilt.
+is needed on the Pi because the frontend is prebuilt. To validate an extracted
+release layout without changing the system, run
+`bash /opt/rmg-watcher/deploy/scripts/install-rpi5.sh --check`.
 
 Set `PIPELINE_MOCK_MODE=false`, `TRANSIT_PROVIDER=transitous`, and a
 `TRANSIT_CONTACT` value in `/opt/rmg-watcher/.env` for live data. Then restart

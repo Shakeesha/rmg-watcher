@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.5] - 2026-11-23
+
+### Added
+
+- `--check` mode for the Pi installer that validates the release layout without
+  changing the system, covered by pytest and a CI step.
+
 ## [0.21.4] - 2026-11-23
 
 ### Fixed
