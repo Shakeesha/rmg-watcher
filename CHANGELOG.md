@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.4] - 2026-11-23
+
+### Fixed
+
+- The Pi installer now resolves the release root correctly; it previously looked
+  in `deploy/` for `pyproject.toml` and aborted with "No release found".
+
 ## [0.21.3] - 2026-11-23
 
 ### Fixed

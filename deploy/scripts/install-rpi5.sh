@@ -11,7 +11,7 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if [[ ! -f "${SOURCE_DIR}/pyproject.toml" ]]; then
   echo "No release found in ${SOURCE_DIR}." >&2
